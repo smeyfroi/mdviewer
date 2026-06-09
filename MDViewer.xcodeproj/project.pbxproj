@@ -1,0 +1,528 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2D01A0012C00000100A00001 /* MDViewerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D01B0012C00000100A00001 /* MDViewerApp.swift */; };
+		2D01A0022C00000100A00001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D01B0022C00000100A00001 /* ContentView.swift */; };
+		2D01A0032C00000100A00001 /* WorkspaceStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D01B0032C00000100A00001 /* WorkspaceStore.swift */; };
+		2D01A0042C00000100A00001 /* MarkdownWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D01B0042C00000100A00001 /* MarkdownWebView.swift */; };
+		2D01A0052C00000100A00001 /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D01B0052C00000100A00001 /* MarkdownRenderer.swift */; };
+		2D01A0062C00000100A00001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2D01B0062C00000100A00001 /* Assets.xcassets */; };
+		2D01A0072C00000100A00001 /* Styles in Resources */ = {isa = PBXBuildFile; fileRef = 2D01B0072C00000100A00001 /* Styles */; };
+		2D01A0082C00000100A00001 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D01B0082C00000100A00001 /* WebKit.framework */; };
+		2D02A0012C00000100A00002 /* PreviewProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D02B0012C00000100A00002 /* PreviewProvider.swift */; };
+		2D02A0022C00000100A00002 /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D01B0052C00000100A00001 /* MarkdownRenderer.swift */; };
+		2D02A0032C00000100A00002 /* Styles in Resources */ = {isa = PBXBuildFile; fileRef = 2D01B0072C00000100A00001 /* Styles */; };
+		2D02A0042C00000100A00002 /* Quartz.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2D02B0052C00000100A00002 /* Quartz.framework */; };
+		2D02A0052C00000100A00002 /* MDViewerQuickLook.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 2D02B0062C00000100A00002 /* MDViewerQuickLook.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2D02G0022C00000100A00002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2D01E0022C00000100A00001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2D02E0012C00000100A00002;
+			remoteInfo = MDViewerQuickLook;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2D02C0042C00000100A00002 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				2D02A0052C00000100A00002 /* MDViewerQuickLook.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		2D01B0012C00000100A00001 /* MDViewerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDViewerApp.swift; sourceTree = "<group>"; };
+		2D01B0022C00000100A00001 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		2D01B0032C00000100A00001 /* WorkspaceStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceStore.swift; sourceTree = "<group>"; };
+		2D01B0042C00000100A00001 /* MarkdownWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownWebView.swift; sourceTree = "<group>"; };
+		2D01B0052C00000100A00001 /* MarkdownRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownRenderer.swift; sourceTree = "<group>"; };
+		2D01B0062C00000100A00001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2D01B0072C00000100A00001 /* Styles */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Styles; sourceTree = "<group>"; };
+		2D01B0082C00000100A00001 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		2D01B0092C00000100A00001 /* MDViewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MDViewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2D01B00A2C00000100A00001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		2D01B00B2C00000100A00001 /* MDViewer.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MDViewer.entitlements; sourceTree = "<group>"; };
+		2D02B0012C00000100A00002 /* PreviewProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewProvider.swift; sourceTree = "<group>"; };
+		2D02B0032C00000100A00002 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		2D02B0042C00000100A00002 /* QuickLookPreview.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = QuickLookPreview.entitlements; sourceTree = "<group>"; };
+		2D02B0052C00000100A00002 /* Quartz.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Quartz.framework; path = System/Library/Frameworks/Quartz.framework; sourceTree = SDKROOT; };
+		2D02B0062C00000100A00002 /* MDViewerQuickLook.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MDViewerQuickLook.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		2D01C0012C00000100A00001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D01A0082C00000100A00001 /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2D02C0012C00000100A00002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D02A0042C00000100A00002 /* Quartz.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2D01D0012C00000100A00001 = {
+			isa = PBXGroup;
+			children = (
+				2D01D0022C00000100A00001 /* MDViewer */,
+				2D02D0012C00000100A00002 /* QuickLookPreview */,
+				2D01D0032C00000100A00001 /* Frameworks */,
+				2D01D0042C00000100A00001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		2D01D0022C00000100A00001 /* MDViewer */ = {
+			isa = PBXGroup;
+			children = (
+				2D01B0012C00000100A00001 /* MDViewerApp.swift */,
+				2D01B0022C00000100A00001 /* ContentView.swift */,
+				2D01B0032C00000100A00001 /* WorkspaceStore.swift */,
+				2D01B0042C00000100A00001 /* MarkdownWebView.swift */,
+				2D01B0052C00000100A00001 /* MarkdownRenderer.swift */,
+				2D01B00A2C00000100A00001 /* Info.plist */,
+				2D01B00B2C00000100A00001 /* MDViewer.entitlements */,
+				2D01B0062C00000100A00001 /* Assets.xcassets */,
+				2D01B0072C00000100A00001 /* Styles */,
+			);
+			path = MDViewer;
+			sourceTree = "<group>";
+		};
+		2D01D0032C00000100A00001 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				2D01B0082C00000100A00001 /* WebKit.framework */,
+				2D02B0052C00000100A00002 /* Quartz.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		2D01D0042C00000100A00001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2D01B0092C00000100A00001 /* MDViewer.app */,
+				2D02B0062C00000100A00002 /* MDViewerQuickLook.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2D02D0012C00000100A00002 /* QuickLookPreview */ = {
+			isa = PBXGroup;
+			children = (
+				2D02B0012C00000100A00002 /* PreviewProvider.swift */,
+				2D02B0032C00000100A00002 /* Info.plist */,
+				2D02B0042C00000100A00002 /* QuickLookPreview.entitlements */,
+			);
+			path = QuickLookPreview;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		2D01E0012C00000100A00001 /* MDViewer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2D01F0032C00000100A00001 /* Build configuration list for PBXNativeTarget "MDViewer" */;
+			buildPhases = (
+				2D01C0022C00000100A00001 /* Sources */,
+				2D01C0012C00000100A00001 /* Frameworks */,
+				2D01C0032C00000100A00001 /* Resources */,
+				2D02C0042C00000100A00002 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2D02G0012C00000100A00002 /* PBXTargetDependency */,
+			);
+			name = MDViewer;
+			productName = MDViewer;
+			productReference = 2D01B0092C00000100A00001 /* MDViewer.app */;
+			productType = "com.apple.product-type.application";
+		};
+		2D02E0012C00000100A00002 /* MDViewerQuickLook */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2D02F0032C00000100A00002 /* Build configuration list for PBXNativeTarget "MDViewerQuickLook" */;
+			buildPhases = (
+				2D02C0022C00000100A00002 /* Sources */,
+				2D02C0012C00000100A00002 /* Frameworks */,
+				2D02C0032C00000100A00002 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MDViewerQuickLook;
+			productName = MDViewerQuickLook;
+			productReference = 2D02B0062C00000100A00002 /* MDViewerQuickLook.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2D01E0022C00000100A00001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					2D01E0012C00000100A00001 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					2D02E0012C00000100A00002 = {
+						CreatedOnToolsVersion = 26.2;
+					};
+				};
+			};
+			buildConfigurationList = 2D01F0012C00000100A00001 /* Build configuration list for PBXProject "MDViewer" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 2D01D0012C00000100A00001;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 2D01D0042C00000100A00001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				2D01E0012C00000100A00001 /* MDViewer */,
+				2D02E0012C00000100A00002 /* MDViewerQuickLook */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		2D01C0032C00000100A00001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D01A0062C00000100A00001 /* Assets.xcassets in Resources */,
+				2D01A0072C00000100A00001 /* Styles in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2D02C0032C00000100A00002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D02A0032C00000100A00002 /* Styles in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2D01C0022C00000100A00001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D01A0012C00000100A00001 /* MDViewerApp.swift in Sources */,
+				2D01A0022C00000100A00001 /* ContentView.swift in Sources */,
+				2D01A0032C00000100A00001 /* WorkspaceStore.swift in Sources */,
+				2D01A0042C00000100A00001 /* MarkdownWebView.swift in Sources */,
+				2D01A0052C00000100A00001 /* MarkdownRenderer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2D02C0022C00000100A00002 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2D02A0012C00000100A00002 /* PreviewProvider.swift in Sources */,
+				2D02A0022C00000100A00002 /* MarkdownRenderer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2D02G0012C00000100A00002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2D02E0012C00000100A00002 /* MDViewerQuickLook */;
+			targetProxy = 2D02G0022C00000100A00002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2D01F0042C00000100A00001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		2D01F0052C00000100A00001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		2D01F0062C00000100A00001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MDViewer/MDViewer.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_LANGUAGE = en;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MDViewer/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.mdviewer;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		2D01F0072C00000100A00001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = MDViewer/MDViewer.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_LANGUAGE = en;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = MDViewer/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.mdviewer;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		2D02F0062C00000100A00002 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = QuickLookPreview/QuickLookPreview.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_LANGUAGE = en;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = QuickLookPreview/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.mdviewer.quicklook;
+				PRODUCT_NAME = MDViewerQuickLook;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		2D02F0072C00000100A00002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = QuickLookPreview/QuickLookPreview.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_LANGUAGE = en;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = QuickLookPreview/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.mdviewer.quicklook;
+				PRODUCT_NAME = MDViewerQuickLook;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2D01F0012C00000100A00001 /* Build configuration list for PBXProject "MDViewer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D01F0042C00000100A00001 /* Debug */,
+				2D01F0052C00000100A00001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2D01F0032C00000100A00001 /* Build configuration list for PBXNativeTarget "MDViewer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D01F0062C00000100A00001 /* Debug */,
+				2D01F0072C00000100A00001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		2D02F0032C00000100A00002 /* Build configuration list for PBXNativeTarget "MDViewerQuickLook" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2D02F0062C00000100A00002 /* Debug */,
+				2D02F0072C00000100A00002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2D01E0022C00000100A00001 /* Project object */;
+}

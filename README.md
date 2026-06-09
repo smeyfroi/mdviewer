@@ -1,0 +1,78 @@
+# MDViewer
+
+MDViewer is a native macOS Markdown viewer built with Swift and SwiftUI. It is designed to feel like a Mac app: direct file handling, a unified toolbar, document tabs, state restoration, keyboard shortcuts, a quiet outline sidebar, and a bundled Quick Look preview extension.
+
+## Features
+
+- Open or drop Markdown files, including folders that contain Markdown files.
+- View multiple Markdown documents in tabs.
+- Restore the previous workspace after quitting, including open tabs, selected tab, theme, zoom, edit mode, and outline visibility.
+- Render Markdown in a native SwiftUI preview with support for common blocks, headings, lists, code fences, tables, quotes, rules, and inline formatting.
+- Toggle an outline sidebar for heading navigation.
+- Search within the rendered preview with highlighted matches and result counts.
+- Zoom the rendered preview in and out.
+- Switch between bundled preview styles: Native, GitHub, Manuscript, and Night.
+- Edit Markdown beside the rendered preview and save changed files.
+- Reload from disk, reveal files in Finder, copy file paths, and copy rendered HTML.
+- Use toolbar controls with hover help and accessibility labels.
+- Preview Markdown in Finder via the bundled `MDViewerQuickLook.appex` Quick Look extension.
+
+MDViewer supports `.md`, `.markdown`, `.mdown`, and `.mkd` files and declares the `net.daringfireball.markdown` document type.
+
+## Quick Look
+
+The app embeds a native Quick Look Preview extension at:
+
+```text
+MDViewer.app/Contents/PlugIns/MDViewerQuickLook.appex
+```
+
+The extension uses Apple’s modern `QLPreviewProvider` / `QLPreviewingController` preview-extension path and returns a styled HTML preview for Markdown files. It reuses the app’s Markdown renderer and bundled Native stylesheet.
+
+When testing a freshly built copy, macOS may need the app bundle to be registered before Finder offers the extension. Building with Xcode registers the app through Launch Services; if Finder still uses a cached preview, reset Quick Look with:
+
+```sh
+qlmanage -r
+qlmanage -r cache
+```
+
+## Build
+
+Open `MDViewer.xcodeproj` in Xcode and run the `MDViewer` scheme.
+
+Command-line debug build:
+
+```sh
+xcodebuild -project MDViewer.xcodeproj -scheme MDViewer -configuration Debug -derivedDataPath build/DerivedData build
+```
+
+Command-line release build:
+
+```sh
+xcodebuild -project MDViewer.xcodeproj -scheme MDViewer -configuration Release -derivedDataPath build/DerivedData build
+```
+
+The release app is produced at:
+
+```text
+build/DerivedData/Build/Products/Release/MDViewer.app
+```
+
+## Project Layout
+
+- `MDViewer/ContentView.swift` contains the main SwiftUI app surface and native rendered preview.
+- `MDViewer/WorkspaceStore.swift` manages tabs, file access, workspace restoration, themes, zoom, edit state, and file commands.
+- `MDViewer/MarkdownRenderer.swift` renders Markdown to HTML for copy/export and Quick Look.
+- `MDViewer/Styles/` contains bundled preview styles.
+- `QuickLookPreview/` contains the bundled Quick Look Preview extension.
+- `Tools/generate_app_icon.py` regenerates the app icon assets.
+
+## License
+
+MIT. See `LICENSE`.
+
+## Notes
+
+The Markdown renderer is intentionally dependency-free for the initial project. It supports common Markdown blocks and inline formatting, and is isolated in `MarkdownRenderer.swift` so it can be replaced later with a CommonMark/GFM parser if the app needs full compatibility.
+
+Stylesheet acknowledgements live in `ACKNOWLEDGEMENTS.md`.

@@ -1,0 +1,136 @@
+:root {
+  --page-bg: #f3f0ea;
+  --content-bg: #fffdf8;
+  --text: #25221f;
+  --muted: #686059;
+  --border: #d9d0c4;
+  --accent: #7c3f20;
+  --inline-code-bg: #eee7dc;
+  --code-bg: #f5efe5;
+  --quote-bg: #f8f2e8;
+  --content-width: 760px;
+  --content-padding: 64px 68px 84px;
+  --body-font: "New York", Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg: #191715;
+    --content-bg: #22201d;
+    --text: #f0e9dc;
+    --muted: #b7ab9b;
+    --border: #494238;
+    --accent: #e3a268;
+    --inline-code-bg: #302b25;
+    --code-bg: #1d1a17;
+    --quote-bg: #2a261f;
+  }
+}
+
+.markdown-body {
+  background: var(--content-bg);
+  box-shadow: 0 18px 70px rgb(74 55 34 / 0.13);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 1.75em 0 0.55em;
+  line-height: 1.16;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 2.55rem;
+}
+
+h2 {
+  font-size: 1.78rem;
+}
+
+h3 {
+  font-size: 1.36rem;
+}
+
+p {
+  margin: 1.05em 0;
+}
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 0.07em;
+  text-underline-offset: 0.18em;
+}
+
+blockquote {
+  margin: 1.4em 0;
+  padding: 0.2em 1.2em;
+  border-left: 3px solid var(--accent);
+  background: var(--quote-bg);
+  color: var(--muted);
+  font-style: italic;
+}
+
+hr {
+  width: 44%;
+  height: 1px;
+  border: 0;
+  margin: 2.3rem auto;
+  background: var(--border);
+}
+
+ul,
+ol {
+  padding-left: 1.6em;
+}
+
+code {
+  padding: 0.08em 0.28em;
+  border-radius: 4px;
+  background: var(--inline-code-bg);
+  font-family: "SF Mono", ui-monospace, Menlo, monospace;
+  font-size: 0.82em;
+}
+
+pre {
+  overflow: auto;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--code-bg);
+}
+
+pre code {
+  padding: 0;
+  background: transparent;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94em;
+}
+
+th,
+td {
+  padding: 0.55rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+th {
+  color: var(--muted);
+  font-size: 0.86em;
+  text-transform: uppercase;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
