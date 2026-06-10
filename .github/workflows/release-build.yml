@@ -5,6 +5,11 @@ on:
     branches:
       - main
       - master
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -38,3 +43,21 @@ jobs:
         with:
           name: MDViewer-release-app
           path: build/DerivedData/Build/Products/Release/MDViewer.app.zip
+
+      - name: Publish GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" \
+              build/DerivedData/Build/Products/Release/MDViewer.app.zip \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              build/DerivedData/Build/Products/Release/MDViewer.app.zip \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "MDViewer $GITHUB_REF_NAME" \
+              --generate-notes
+          fi
