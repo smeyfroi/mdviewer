@@ -13,6 +13,7 @@ struct MDViewerApp: App {
                 .onAppear {
                     appDelegate.workspace = workspace
                     workspace.restoreIfNeeded()
+                    workspace.refreshRecentDocuments()
                 }
                 .onOpenURL { url in
                     workspace.open(urls: [url])
@@ -26,6 +27,28 @@ struct MDViewerApp: App {
                     workspace.openPanel()
                 }
                 .keyboardShortcut("o")
+            }
+
+            CommandGroup(after: .newItem) {
+                Menu("Open Recent") {
+                    if workspace.recentDocuments.isEmpty {
+                        Button("No Recent Files") { }
+                            .disabled(true)
+                    } else {
+                        ForEach(workspace.recentDocuments) { recentDocument in
+                            Button(recentDocument.title) {
+                                workspace.openRecentDocument(recentDocument)
+                            }
+                            .help(recentDocument.url.path)
+                        }
+
+                        Divider()
+
+                        Button("Clear Menu") {
+                            workspace.clearRecentDocuments()
+                        }
+                    }
+                }
             }
 
             CommandGroup(after: .saveItem) {
@@ -120,6 +143,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         repairQuitMenuItem()
+        workspace?.refreshRecentDocuments()
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {

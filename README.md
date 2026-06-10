@@ -7,6 +7,7 @@ MDViewer is a native macOS Markdown viewer built with Swift and SwiftUI. It is d
 ## Features
 
 - Open or drop Markdown files, including folders that contain Markdown files.
+- Reopen Markdown files from the standard File > Open Recent menu.
 - View multiple Markdown documents in tabs.
 - Restore the previous workspace after quitting, including open tabs, selected tab, theme, zoom, edit mode, and outline visibility.
 - Render Markdown in a native SwiftUI preview with support for common blocks, headings, lists, code fences, tables, quotes, rules, and inline formatting.

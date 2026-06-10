@@ -45,6 +45,13 @@ struct MarkdownScrollRequest: Equatable {
     let anchorID: String
 }
 
+struct RecentDocument: Identifiable, Equatable {
+    let url: URL
+
+    var id: String { url.path }
+    var title: String { url.lastPathComponent }
+}
+
 @MainActor
 final class WorkspaceStore: ObservableObject {
     @Published var tabs: [MarkdownTab] = []
@@ -57,6 +64,7 @@ final class WorkspaceStore: ObservableObject {
     @Published var findQuery = ""
     @Published private(set) var findResultCount = 0
     @Published private(set) var scrollRequest: MarkdownScrollRequest?
+    @Published private(set) var recentDocuments: [RecentDocument] = []
 
     private let supportedExtensions = Set(["md", "markdown", "mdown", "mkd"])
     private var hasRestored = false
@@ -103,6 +111,7 @@ final class WorkspaceStore: ObservableObject {
         isOutlineVisible = snapshot.isOutlineVisible ?? false
         tabs = snapshot.tabs.compactMap(restoreTab)
         selectedTabID = tabs.contains { $0.id == snapshot.selectedTabID } ? snapshot.selectedTabID : tabs.first?.id
+        refreshRecentDocuments()
     }
 
     func openPanel() {
@@ -123,17 +132,36 @@ final class WorkspaceStore: ObservableObject {
 
         for url in markdownURLs {
             let standardized = url.standardizedFileURL
+            noteRecentDocument(standardized)
+
             if let existing = tabs.first(where: { $0.url?.standardizedFileURL == standardized }) {
                 selectedTabID = existing.id
                 continue
             }
 
             tabs.append(loadTab(from: standardized))
-            NSDocumentController.shared.noteNewRecentDocumentURL(standardized)
             selectedTabID = tabs.last?.id
         }
 
+        refreshRecentDocuments()
         saveWorkspace()
+    }
+
+    func openRecentDocument(_ recentDocument: RecentDocument) {
+        open(urls: [resolvedRecentURL(for: recentDocument.url)])
+    }
+
+    func clearRecentDocuments() {
+        NSDocumentController.shared.clearRecentDocuments(self)
+        clearRecentBookmarks()
+        refreshRecentDocuments()
+    }
+
+    func refreshRecentDocuments() {
+        recentDocuments = NSDocumentController.shared.recentDocumentURLs
+            .map(\.standardizedFileURL)
+            .filter(isSupportedMarkdown)
+            .map(RecentDocument.init)
     }
 
     func handleDrop(_ providers: [NSItemProvider]) -> Bool {
@@ -361,6 +389,10 @@ final class WorkspaceStore: ObservableObject {
         workspaceDirectoryURL.appendingPathComponent("workspace.json")
     }
 
+    private var recentBookmarksFileURL: URL {
+        workspaceDirectoryURL.appendingPathComponent("recent-bookmarks.json")
+    }
+
     private func isSupportedMarkdown(_ url: URL) -> Bool {
         supportedExtensions.contains(url.pathExtension.lowercased())
     }
@@ -514,6 +546,65 @@ final class WorkspaceStore: ObservableObject {
             includingResourceValuesForKeys: nil,
             relativeTo: nil
         )
+    }
+
+    private func noteRecentDocument(_ url: URL) {
+        NSDocumentController.shared.noteNewRecentDocumentURL(url)
+        saveRecentBookmark(for: url)
+    }
+
+    private func resolvedRecentURL(for url: URL) -> URL {
+        let standardized = url.standardizedFileURL
+        guard let bookmarkData = recentBookmarks()[standardized.path] else {
+            return standardized
+        }
+
+        var isStale = false
+        guard let resolvedURL = try? URL(
+            resolvingBookmarkData: bookmarkData,
+            options: [.withSecurityScope],
+            relativeTo: nil,
+            bookmarkDataIsStale: &isStale
+        ) else {
+            return standardized
+        }
+
+        if isStale {
+            saveRecentBookmark(for: resolvedURL)
+        }
+
+        return resolvedURL.standardizedFileURL
+    }
+
+    private func saveRecentBookmark(for url: URL) {
+        guard let bookmarkData = makeBookmark(for: url) else { return }
+
+        var bookmarks = recentBookmarks()
+        bookmarks[url.standardizedFileURL.path] = bookmarkData
+
+        do {
+            try FileManager.default.createDirectory(
+                at: workspaceDirectoryURL,
+                withIntermediateDirectories: true
+            )
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            try encoder.encode(bookmarks).write(to: recentBookmarksFileURL, options: .atomic)
+        } catch {
+            assertionFailure("Unable to save recent bookmarks: \(error.localizedDescription)")
+        }
+    }
+
+    private func recentBookmarks() -> [String: Data] {
+        guard let data = try? Data(contentsOf: recentBookmarksFileURL),
+              let bookmarks = try? JSONDecoder().decode([String: Data].self, from: data)
+        else { return [:] }
+
+        return bookmarks
+    }
+
+    private func clearRecentBookmarks() {
+        try? FileManager.default.removeItem(at: recentBookmarksFileURL)
     }
 
     private func loadStylesheet(for theme: MarkdownTheme) -> String {
