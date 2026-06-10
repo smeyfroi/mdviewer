@@ -38,6 +38,8 @@ qlmanage -r
 qlmanage -r cache
 ```
 
+For downloaded builds, move `MDViewer.app` to `/Applications` or `~/Applications` and launch it once so macOS can register the embedded extension. If previews stop appearing, confirm `MDViewer Quick Look` is enabled in System Settings under Extensions, then reset Quick Look with the commands above.
+
 ## Build
 
 Open `MDViewer.xcodeproj` in Xcode and run the `MDViewer` scheme.
