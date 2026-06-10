@@ -97,13 +97,59 @@ struct ContentView: View {
                 .accessibilityLabel("Outline")
                 .help(workspace.isOutlineVisible ? "Hide document outline" : "Show document outline")
 
-                Toggle(isOn: findVisibleBinding) {
-                    Label("Find", systemImage: "magnifyingglass")
+                if workspace.isFindVisible {
+                    HStack(spacing: 10) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(.secondary)
+                                .accessibilityHidden(true)
+
+                            TextField("Find", text: $workspace.findQuery)
+                                .textFieldStyle(.plain)
+                                .focused($findFieldIsFocused)
+                                .accessibilityLabel("Find")
+                        }
+                        .padding(.horizontal, 8)
+                        .frame(width: 196, height: 26)
+                        .background(.quaternary.opacity(0.75), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .stroke(.separator.opacity(0.55), lineWidth: 1)
+                        }
+                        .help("Find in preview")
+
+                        if !findResultText.isEmpty {
+                            Text(findResultText)
+                                .font(.caption.monospacedDigit().weight(.medium))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .fixedSize(horizontal: true, vertical: false)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(.quaternary, in: Capsule())
+                                .accessibilityLabel("Find Result Count")
+                                .accessibilityValue(findResultText)
+                                .help("Matching results")
+                        }
+
+                        Button {
+                            workspace.toggleFind()
+                        } label: {
+                            Label("Close Find", systemImage: "xmark.circle.fill")
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel("Close Find")
+                        .help("Close find")
+                    }
+                } else {
+                    Toggle(isOn: findVisibleBinding) {
+                        Label("Find", systemImage: "magnifyingglass")
+                    }
+                    .toggleStyle(.button)
+                    .disabled(workspace.selectedTabID == nil)
+                    .accessibilityLabel("Find")
+                    .help("Find in preview")
                 }
-                .toggleStyle(.button)
-                .disabled(workspace.selectedTabID == nil)
-                .accessibilityLabel("Find")
-                .help(workspace.isFindVisible ? "Hide find" : "Find in preview")
             }
 
             ToolbarItemGroup {
@@ -142,38 +188,6 @@ struct ContentView: View {
                 .help("Choose preview style")
             }
 
-            if workspace.isFindVisible {
-                ToolbarItemGroup {
-                    TextField("Find", text: $workspace.findQuery)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 180)
-                        .focused($findFieldIsFocused)
-                        .accessibilityLabel("Find")
-                        .help("Find in preview")
-
-                    if !findResultText.isEmpty {
-                        Text(findResultText)
-                            .font(.caption.monospacedDigit().weight(.medium))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3)
-                            .frame(width: 96, alignment: .leading)
-                            .background(.quaternary, in: Capsule())
-                            .accessibilityLabel("Find Result Count")
-                            .accessibilityValue(findResultText)
-                            .help("Matching results")
-                    }
-
-                    Button {
-                        workspace.toggleFind()
-                    } label: {
-                        Label("Close Find", systemImage: "xmark.circle.fill")
-                    }
-                    .accessibilityLabel("Close Find")
-                    .help("Close find")
-                }
-            }
         }
     }
 

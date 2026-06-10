@@ -2,6 +2,8 @@
 
 MDViewer is a native macOS Markdown viewer built with Swift and SwiftUI. It is designed to feel like a Mac app: direct file handling, a unified toolbar, document tabs, state restoration, keyboard shortcuts, a quiet outline sidebar, and a bundled Quick Look preview extension.
 
+![MDViewer showing a Markdown document with outline, native preview, and find controls](Screenshot.png)
+
 ## Features
 
 - Open or drop Markdown files, including folders that contain Markdown files.
@@ -51,6 +53,8 @@ Command-line release build:
 ```sh
 xcodebuild -project MDViewer.xcodeproj -scheme MDViewer -configuration Release -derivedDataPath build/DerivedData build
 ```
+
+GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` artifact.
 
 The release app is produced at:
 
