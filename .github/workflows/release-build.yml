@@ -58,16 +58,18 @@ jobs:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security import "$CERTIFICATE_PATH" \
             -P "$DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD" \
-            -A \
-            -t cert \
             -f pkcs12 \
-            -k "$KEYCHAIN_PATH"
+            -k "$KEYCHAIN_PATH" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
           security list-keychains -d user -s "$KEYCHAIN_PATH"
           security set-key-partition-list \
             -S apple-tool:,apple:,codesign: \
             -s \
             -k "$KEYCHAIN_PASSWORD" \
             "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          echo "SIGNING_KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
 
       - name: Build signed release app
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
@@ -131,10 +133,14 @@ jobs:
       - name: Verify packaged app
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
+          security delete-keychain "$SIGNING_KEYCHAIN_PATH"
+          security list-keychains -d user -s "$HOME/Library/Keychains/login.keychain-db"
           VERIFY_DIR="$RUNNER_TEMP/mdviewer-release-verify"
           mkdir -p "$VERIFY_DIR"
           ditto -x -k build/DerivedData/Build/Products/Release/MDViewer.app.zip "$VERIFY_DIR"
           codesign --verify --deep --strict --verbose=4 "$VERIFY_DIR/MDViewer.app"
+          codesign -dvvv "$VERIFY_DIR/MDViewer.app"
+          codesign -dvvv "$VERIFY_DIR/MDViewer.app/Contents/PlugIns/MDViewerQuickLook.appex"
           xcrun stapler validate "$VERIFY_DIR/MDViewer.app"
           spctl -a -vvv -t exec "$VERIFY_DIR/MDViewer.app"
 
