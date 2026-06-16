@@ -33,6 +33,14 @@ struct MDViewerApp: App {
             }
 
             CommandGroup(after: .newItem) {
+                Button("Close Tab") {
+                    workspace.closeActiveTab()
+                }
+                .keyboardShortcut("w")
+                .disabled(!workspace.hasActiveDocument)
+
+                Divider()
+
                 Menu("Open Recent") {
                     if workspace.recentDocuments.isEmpty {
                         Button("No Recent Files") { }
@@ -162,6 +170,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         installWindowObservers()
         DispatchQueue.main.async { [weak self] in
             self?.repairQuitMenuItem()
+            self?.repairCloseMenuItem()
             self?.normalizeToolbars()
             self?.collapseToSingleWindow()
         }
@@ -169,6 +178,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func applicationDidBecomeActive(_ notification: Notification) {
         repairQuitMenuItem()
+        repairCloseMenuItem()
         normalizeToolbars()
         collapseToSingleWindow()
         workspace?.refreshRecentDocuments()
@@ -193,6 +203,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         if menuItem.action == #selector(quit(_:)) {
             return true
         }
+        if menuItem.action == #selector(closeTab(_:)) {
+            return workspace?.hasActiveDocument ?? false
+        }
 
         return true
     }
@@ -200,6 +213,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     @objc private func quit(_ sender: Any?) {
         workspace?.saveWorkspace()
         NSApp.terminate(sender)
+    }
+
+    @objc private func closeTab(_ sender: Any?) {
+        workspace?.closeActiveTab()
     }
 
     private func repairQuitMenuItem() {
@@ -217,6 +234,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         quitItem.target = self
         quitItem.action = #selector(quit(_:))
         quitItem.isEnabled = true
+    }
+
+    private func repairCloseMenuItem() {
+        guard let fileMenu = NSApp.mainMenu?.items.first(where: { $0.title == "File" })?.submenu else { return }
+
+        let closeItems = fileMenu.items.filter { item in
+            item.action == #selector(NSWindow.performClose(_:)) ||
+            item.keyEquivalent == "w" ||
+            item.title.localizedCaseInsensitiveContains("Close Window")
+        }
+
+        for closeItem in closeItems {
+            closeItem.title = "Close Tab"
+            closeItem.keyEquivalent = "w"
+            closeItem.keyEquivalentModifierMask = [.command]
+            closeItem.target = self
+            closeItem.action = #selector(closeTab(_:))
+            closeItem.isEnabled = workspace?.hasActiveDocument ?? false
+        }
     }
 
     private func installWindowObservers() {

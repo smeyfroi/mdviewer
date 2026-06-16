@@ -80,6 +80,10 @@ final class WorkspaceStore: ObservableObject {
         activeTab != nil
     }
 
+    var selectedTabIndex: Int? {
+        activeTabIndex
+    }
+
     var canUseActiveFileCommands: Bool {
         activeTab?.url != nil
     }
@@ -207,6 +211,18 @@ final class WorkspaceStore: ObservableObject {
             selectedTabID = tabs.last?.id
         }
         saveWorkspace()
+    }
+
+    func selectTab(_ id: UUID) {
+        guard tabs.contains(where: { $0.id == id }) else { return }
+        selectedTabID = id
+        saveWorkspace()
+    }
+
+    func closeTab(_ id: UUID) {
+        guard tabs.contains(where: { $0.id == id }) else { return }
+        selectedTabID = id
+        closeActiveTab()
     }
 
     func saveActiveDocument() {

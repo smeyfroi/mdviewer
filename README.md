@@ -22,6 +22,26 @@ MDViewer is a native macOS Markdown viewer built with Swift and SwiftUI. It is d
 
 MDViewer supports `.md`, `.markdown`, `.mdown`, and `.mkd` files and declares the `net.daringfireball.markdown` document type.
 
+## Default Markdown App
+
+macOS stores default app choices in Launch Services by content type, not just by filename extension. MDViewer declares Markdown as `net.daringfireball.markdown`; if several old MDViewer builds have been launched from different locations, or a new build is copied into `/Applications` without being registered cleanly, Launch Services can drift back to another Markdown-capable app.
+
+To repair the default handler and clear stale `Open With` entries, keep a single installed copy at `/Applications/MDViewer.app`, remove old intermediate copies from common locations such as Downloads or Desktop if you no longer need them, then run:
+
+```sh
+Tools/repair_markdown_handler.sh
+```
+
+If the installed app lives somewhere else, pass the app path:
+
+```sh
+Tools/repair_markdown_handler.sh /path/to/MDViewer.app
+```
+
+The script looks for duplicate MDViewer bundles in common locations, unregisters those duplicate paths from Launch Services, garbage-collects stale Launch Services records, registers the installed app bundle, sets `com.meyfroidt.mdviewer` as the handler for `net.daringfireball.markdown`, and prints the handler before and after the repair. It does not delete app bundles from disk.
+
+If the Finder `Open With` menu still shows stale entries immediately after repair, relaunch Finder or log out and back in; Finder can cache menu contents after Launch Services has already been corrected.
+
 ## Quick Look
 
 The app embeds a native Quick Look Preview extension at:
@@ -71,7 +91,7 @@ Command-line release build:
 xcodebuild -project MDViewer.xcodeproj -scheme MDViewer -configuration Release -derivedDataPath build/DerivedData build
 ```
 
-GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.15` also creates a GitHub Release with `MDViewer.app.zip` attached.
+GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.16` also creates a GitHub Release with `MDViewer.app.zip` attached.
 
 The release app is produced at:
 

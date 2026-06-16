@@ -12,16 +12,17 @@ struct ContentView: View {
             if workspace.tabs.isEmpty {
                 EmptyWorkspaceView(openAction: workspace.openPanel)
             } else {
-                TabView(selection: $workspace.selectedTabID) {
-                    ForEach($workspace.tabs) { $tab in
-                        MarkdownPane(tab: $tab)
-                            .tabItem {
-                                Label(tab.title, systemImage: tab.isDirty ? "doc.badge.ellipsis" : "doc.richtext")
-                            }
-                            .tag(Optional(tab.id))
+                VStack(spacing: 0) {
+                    DocumentTabStrip()
+
+                    Divider()
+
+                    if let selectedTabIndex = workspace.selectedTabIndex {
+                        MarkdownPane(tab: $workspace.tabs[selectedTabIndex])
+                    } else {
+                        EmptyWorkspaceView(openAction: workspace.openPanel)
                     }
                 }
-                .padding(.top, 1)
             }
 
             if isDropTargeted {
@@ -48,13 +49,6 @@ struct ContentView: View {
                 }
                 .accessibilityLabel("Open Markdown Files")
                 .help("Open Markdown files")
-
-                Button(action: workspace.closeActiveTab) {
-                    Label("Close Tab", systemImage: "xmark")
-                }
-                .disabled(workspace.selectedTabID == nil)
-                .accessibilityLabel("Close Tab")
-                .help("Close the active tab")
             }
 
             ToolbarItemGroup(placement: .primaryAction) {
@@ -249,6 +243,118 @@ private struct EmptyWorkspaceView: View {
             .controlSize(.large)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct DocumentTabStrip: View {
+    @EnvironmentObject private var workspace: WorkspaceStore
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 3) {
+                ForEach(workspace.tabs) { tab in
+                    DocumentTabItem(
+                        tab: tab,
+                        isSelected: tab.id == workspace.selectedTabID
+                    )
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+        }
+        .frame(height: 38)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Open Documents")
+    }
+}
+
+private struct DocumentTabItem: View {
+    @EnvironmentObject private var workspace: WorkspaceStore
+    @State private var isHovering = false
+
+    let tab: MarkdownTab
+    let isSelected: Bool
+
+    var body: some View {
+        HStack(spacing: 7) {
+            statusIcon
+
+            Text(tab.title)
+                .font(.system(size: 12.5, weight: isSelected ? .semibold : .medium))
+                .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                workspace.closeTab(tab.id)
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .frame(width: 18, height: 18)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .opacity(isSelected || isHovering ? 1 : 0)
+            .allowsHitTesting(isSelected || isHovering)
+            .accessibilityLabel("Close \(tab.title)")
+            .help("Close \(tab.title)")
+        }
+        .padding(.leading, 9)
+        .padding(.trailing, 5)
+        .frame(width: 190, height: 28)
+        .background(tabBackground, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(tabBorder, lineWidth: 1)
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+        .onTapGesture {
+            workspace.selectTab(tab.id)
+        }
+        .onHover { hovering in
+            isHovering = hovering
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(tab.title)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    @ViewBuilder
+    private var statusIcon: some View {
+        if tab.isDirty {
+            Circle()
+                .fill(Color(nsColor: .controlAccentColor))
+                .frame(width: 6, height: 6)
+                .accessibilityLabel("Unsaved")
+        } else {
+            Image(systemName: "doc.richtext")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(isSelected ? Color.primary.opacity(0.72) : Color.secondary.opacity(0.72))
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var tabBackground: Color {
+        if isSelected {
+            return Color(nsColor: .controlAccentColor).opacity(0.18)
+        }
+        if isHovering {
+            return Color(nsColor: .quaternaryLabelColor).opacity(0.18)
+        }
+        return .clear
+    }
+
+    private var tabBorder: Color {
+        if isSelected {
+            return Color(nsColor: .controlAccentColor).opacity(0.42)
+        }
+        if isHovering {
+            return Color(nsColor: .separatorColor).opacity(0.45)
+        }
+        return .clear
     }
 }
 
