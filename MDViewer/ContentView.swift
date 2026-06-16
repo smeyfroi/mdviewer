@@ -278,6 +278,8 @@ private struct DocumentTabItem: View {
 
     var body: some View {
         HStack(spacing: 7) {
+            closeButton
+
             statusIcon
 
             Text(tab.title)
@@ -287,23 +289,9 @@ private struct DocumentTabItem: View {
                 .truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button {
-                workspace.closeTab(tab.id)
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9.5, weight: .bold))
-                    .frame(width: 18, height: 18)
-                    .contentShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.secondary)
-            .opacity(isSelected || isHovering ? 1 : 0)
-            .allowsHitTesting(isSelected || isHovering)
-            .accessibilityLabel("Close \(tab.title)")
-            .help("Close \(tab.title)")
         }
-        .padding(.leading, 9)
-        .padding(.trailing, 5)
+        .padding(.leading, 6)
+        .padding(.trailing, 9)
         .frame(width: 190, height: 28)
         .background(tabBackground, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
         .overlay {
@@ -320,6 +308,27 @@ private struct DocumentTabItem: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(tab.title)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private var closeButton: some View {
+        Button {
+            workspace.closeTab(tab.id)
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 9.5, weight: .bold))
+                .frame(width: 18, height: 18)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .opacity(isSelected || isHovering ? 1 : 0.45)
+        .background(closeButtonBackground, in: Circle())
+        .accessibilityLabel("Close \(tab.title)")
+        .help("Close \(tab.title)")
+    }
+
+    private var closeButtonBackground: Color {
+        isHovering ? Color(nsColor: .quaternaryLabelColor).opacity(0.24) : .clear
     }
 
     @ViewBuilder

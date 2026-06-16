@@ -7,9 +7,14 @@ struct MDViewerApp: App {
     @StateObject private var workspace = WorkspaceStore()
 
     var body: some Scene {
-        WindowGroup {
+        Window("MDViewer", id: "main") {
             ContentView()
                 .environmentObject(workspace)
+                .background {
+                    WindowAccessor { window in
+                        appDelegate.configureMainWindow(window)
+                    }
+                }
                 .onAppear {
                     let launchURLs = appDelegate.attach(workspace: workspace)
                     workspace.restoreIfNeeded(restoringTabs: launchURLs.isEmpty)
@@ -143,10 +148,11 @@ struct MDViewerApp: App {
 }
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, NSWindowDelegate {
     weak var workspace: WorkspaceStore?
     private var pendingOpenURLs: [URL] = []
-    private var windowObservers: [NSObjectProtocol] = []
+    private var mainWindow: NSWindow?
+    private var keyDownMonitor: Any?
 
     func attach(workspace: WorkspaceStore) -> [URL] {
         self.workspace = workspace
@@ -159,20 +165,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         guard !urls.isEmpty else { return }
 
         if let workspace {
+            showMainWindow()
             workspace.open(urls: urls)
         } else {
             pendingOpenURLs.append(contentsOf: urls)
         }
     }
 
+    func configureMainWindow(_ window: NSWindow) {
+        guard mainWindow !== window else {
+            normalizeToolbar(for: window)
+            return
+        }
+
+        mainWindow = window
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        window.tabbingMode = .disallowed
+        normalizeToolbar(for: window)
+        repairCloseMenuItem()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = false
-        installWindowObservers()
+        installKeyDownMonitor()
         DispatchQueue.main.async { [weak self] in
             self?.repairQuitMenuItem()
             self?.repairCloseMenuItem()
             self?.normalizeToolbars()
-            self?.collapseToSingleWindow()
         }
     }
 
@@ -180,23 +200,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         repairQuitMenuItem()
         repairCloseMenuItem()
         normalizeToolbars()
-        collapseToSingleWindow()
         workspace?.refreshRecentDocuments()
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
         open(urls: urls)
         normalizeToolbars()
-        collapseToSingleWindow()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        removeWindowObservers()
+        removeKeyDownMonitor()
         workspace?.saveWorkspace()
     }
 
     func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
         false
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showMainWindow()
+        return false
     }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
@@ -217,6 +240,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     @objc private func closeTab(_ sender: Any?) {
         workspace?.closeActiveTab()
+        repairCloseMenuItem()
+        showMainWindow()
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard sender === mainWindow else { return true }
+
+        if workspace?.hasActiveDocument == true {
+            workspace?.closeActiveTab()
+        }
+
+        repairCloseMenuItem()
+        showMainWindow()
+        return false
     }
 
     private func repairQuitMenuItem() {
@@ -255,73 +292,77 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         }
     }
 
-    private func installWindowObservers() {
-        guard windowObservers.isEmpty else { return }
+    private func installKeyDownMonitor() {
+        guard keyDownMonitor == nil else { return }
 
-        let notifications: [Notification.Name] = [
-            NSWindow.didBecomeMainNotification,
-            NSWindow.didBecomeKeyNotification,
-            NSWindow.didUpdateNotification
-        ]
+        keyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.keyCode == 13,
+                  event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
+            else { return event }
 
-        windowObservers = notifications.map { name in
-            NotificationCenter.default.addObserver(
-                forName: name,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                Task { @MainActor in
-                    self?.normalizeToolbars()
-                    self?.collapseToSingleWindow()
+            Task { @MainActor in
+                guard let self else { return }
+                if self.workspace?.hasActiveDocument == true {
+                    self.workspace?.closeActiveTab()
                 }
+                self.repairCloseMenuItem()
+                self.showMainWindow()
             }
+
+            return nil
         }
     }
 
-    private func removeWindowObservers() {
-        for observer in windowObservers {
-            NotificationCenter.default.removeObserver(observer)
+    private func removeKeyDownMonitor() {
+        if let keyDownMonitor {
+            NSEvent.removeMonitor(keyDownMonitor)
+            self.keyDownMonitor = nil
         }
-        windowObservers.removeAll()
     }
 
-    private func collapseToSingleWindow() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            let documentWindows = self.visibleDocumentWindows()
-
-            guard documentWindows.count > 1 else { return }
-
-            let keeper = documentWindows.first { $0.isKeyWindow } ??
-                documentWindows.first { $0.isMainWindow } ??
-                documentWindows.first
-
-            for window in documentWindows where window !== keeper {
-                window.close()
-            }
-        }
+    private func showMainWindow() {
+        guard let mainWindow else { return }
+        mainWindow.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func normalizeToolbars() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            for window in self.visibleDocumentWindows() {
-                window.toolbarStyle = .unifiedCompact
-                guard let toolbar = window.toolbar else { continue }
-                toolbar.isVisible = true
-                toolbar.displayMode = .iconOnly
-                toolbar.sizeMode = .regular
-                toolbar.autosavesConfiguration = false
-                toolbar.allowsUserCustomization = false
+            if let mainWindow = self.mainWindow {
+                self.normalizeToolbar(for: mainWindow)
             }
         }
     }
 
-    private func visibleDocumentWindows() -> [NSWindow] {
-        NSApp.windows.filter { window in
-            window.level == .normal &&
-            window.isVisible &&
-            !window.isMiniaturized &&
-            !window.isSheet &&
-            window.styleMask.contains(.titled)
+    private func normalizeToolbar(for window: NSWindow) {
+        window.toolbarStyle = .unifiedCompact
+        guard let toolbar = window.toolbar else { return }
+        toolbar.isVisible = true
+        toolbar.displayMode = .iconOnly
+        toolbar.sizeMode = .regular
+        toolbar.autosavesConfiguration = false
+        toolbar.allowsUserCustomization = false
+    }
+}
+
+private struct WindowAccessor: NSViewRepresentable {
+    let onResolve: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        resolveWindow(for: view)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        resolveWindow(for: nsView)
+    }
+
+    private func resolveWindow(for view: NSView) {
+        DispatchQueue.main.async {
+            if let window = view.window {
+                onResolve(window)
+            }
         }
     }
 }
