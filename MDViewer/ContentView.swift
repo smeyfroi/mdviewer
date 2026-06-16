@@ -645,7 +645,7 @@ private struct NativeMarkdownBlock: Identifiable {
 
         func flushParagraph() {
             guard !paragraph.isEmpty else { return }
-            blocks.append(NativeMarkdownBlock(kind: .paragraph(paragraph.joined(separator: " "))))
+            blocks.append(NativeMarkdownBlock(kind: .paragraph(paragraph.joined(separator: "\n"))))
             paragraph.removeAll()
         }
 
