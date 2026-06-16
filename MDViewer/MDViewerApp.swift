@@ -162,18 +162,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         installWindowObservers()
         DispatchQueue.main.async { [weak self] in
             self?.repairQuitMenuItem()
+            self?.normalizeToolbars()
             self?.collapseToSingleWindow()
         }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
         repairQuitMenuItem()
+        normalizeToolbars()
         collapseToSingleWindow()
         workspace?.refreshRecentDocuments()
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
         open(urls: urls)
+        normalizeToolbars()
         collapseToSingleWindow()
     }
 
@@ -232,6 +235,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 queue: .main
             ) { [weak self] _ in
                 Task { @MainActor in
+                    self?.normalizeToolbars()
                     self?.collapseToSingleWindow()
                 }
             }
@@ -247,13 +251,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     private func collapseToSingleWindow() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            let documentWindows = NSApp.windows.filter { window in
-                window.level == .normal &&
-                window.isVisible &&
-                !window.isMiniaturized &&
-                !window.isSheet &&
-                window.styleMask.contains(.titled)
-            }
+            let documentWindows = self.visibleDocumentWindows()
 
             guard documentWindows.count > 1 else { return }
 
@@ -264,6 +262,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
             for window in documentWindows where window !== keeper {
                 window.close()
             }
+        }
+    }
+
+    private func normalizeToolbars() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            for window in self.visibleDocumentWindows() {
+                window.toolbarStyle = .unifiedCompact
+                guard let toolbar = window.toolbar else { continue }
+                toolbar.isVisible = true
+                toolbar.displayMode = .iconOnly
+                toolbar.sizeMode = .regular
+                toolbar.autosavesConfiguration = false
+                toolbar.allowsUserCustomization = false
+            }
+        }
+    }
+
+    private func visibleDocumentWindows() -> [NSWindow] {
+        NSApp.windows.filter { window in
+            window.level == .normal &&
+            window.isVisible &&
+            !window.isMiniaturized &&
+            !window.isSheet &&
+            window.styleMask.contains(.titled)
         }
     }
 }

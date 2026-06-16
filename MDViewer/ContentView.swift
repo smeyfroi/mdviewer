@@ -42,7 +42,7 @@ struct ContentView: View {
             }
         }
         .toolbar {
-            ToolbarItemGroup {
+            ToolbarItemGroup(placement: .navigation) {
                 Button(action: workspace.openPanel) {
                     Label("Open", systemImage: "folder")
                 }
@@ -55,22 +55,15 @@ struct ContentView: View {
                 .disabled(workspace.selectedTabID == nil)
                 .accessibilityLabel("Close Tab")
                 .help("Close the active tab")
+            }
 
-                Divider()
-
+            ToolbarItemGroup(placement: .primaryAction) {
                 Button(action: workspace.reloadActiveDocument) {
                     Label("Reload", systemImage: "arrow.clockwise")
                 }
                 .disabled(!workspace.canUseActiveFileCommands)
                 .accessibilityLabel("Reload from Disk")
                 .help("Reload from disk")
-
-                Button(action: workspace.revealActiveDocument) {
-                    Label("Reveal", systemImage: "finder")
-                }
-                .disabled(!workspace.canUseActiveFileCommands)
-                .accessibilityLabel("Reveal in Finder")
-                .help("Reveal in Finder")
 
                 Button(action: workspace.saveActiveDocument) {
                     Label("Save", systemImage: "square.and.arrow.down")
@@ -86,9 +79,7 @@ struct ContentView: View {
                 .disabled(workspace.selectedTabID == nil)
                 .accessibilityLabel("Edit")
                 .help(workspace.editMode ? "Hide editor" : "Show editor")
-            }
 
-            ToolbarItemGroup {
                 Toggle(isOn: outlineBinding) {
                     Label("Outline", systemImage: "sidebar.left")
                 }
@@ -96,7 +87,9 @@ struct ContentView: View {
                 .disabled(workspace.selectedTabID == nil)
                 .accessibilityLabel("Outline")
                 .help(workspace.isOutlineVisible ? "Hide document outline" : "Show document outline")
+            }
 
+            ToolbarItem(placement: .primaryAction) {
                 if workspace.isFindVisible {
                     HStack(spacing: 10) {
                         HStack(spacing: 6) {
@@ -152,7 +145,7 @@ struct ContentView: View {
                 }
             }
 
-            ToolbarItemGroup {
+            ToolbarItemGroup(placement: .status) {
                 Button(action: workspace.zoomOut) {
                     Label("Zoom Out", systemImage: "minus.magnifyingglass")
                 }
@@ -175,19 +168,18 @@ struct ContentView: View {
                 .help("Zoom in")
             }
 
-            ToolbarItem {
+            ToolbarItem(placement: .primaryAction) {
                 Picker("Style", selection: themeBinding) {
                     ForEach(MarkdownTheme.allCases) { theme in
                         Text(theme.displayName).tag(theme)
                     }
                 }
                 .pickerStyle(.menu)
-                .frame(width: 148)
+                .frame(width: 128)
                 .disabled(workspace.selectedTabID == nil)
                 .accessibilityLabel("Preview Style")
                 .help("Choose preview style")
             }
-
         }
     }
 
