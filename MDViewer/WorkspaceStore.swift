@@ -387,9 +387,11 @@ final class WorkspaceStore: ObservableObject {
     }
 
     private var workspaceDirectoryURL: URL {
-        FileManager.default
+        let url = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("MDViewer", isDirectory: true)
+        migrateLegacySandboxWorkspaceIfNeeded(to: url)
+        return url
     }
 
     private var workspaceFileURL: URL {
@@ -541,6 +543,15 @@ final class WorkspaceStore: ObservableObject {
             ) {
                 return url
             }
+
+            if let url = try? URL(
+                resolvingBookmarkData: bookmarkData,
+                options: [],
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            ) {
+                return url
+            }
         }
 
         if let path = saved.path {
@@ -554,8 +565,16 @@ final class WorkspaceStore: ObservableObject {
     }
 
     private func makeBookmark(for url: URL) -> Data? {
-        try? url.bookmarkData(
+        if let bookmarkData = try? url.bookmarkData(
             options: [.withSecurityScope],
+            includingResourceValuesForKeys: nil,
+            relativeTo: nil
+        ) {
+            return bookmarkData
+        }
+
+        return try? url.bookmarkData(
+            options: [],
             includingResourceValuesForKeys: nil,
             relativeTo: nil
         )
@@ -579,7 +598,20 @@ final class WorkspaceStore: ObservableObject {
             relativeTo: nil,
             bookmarkDataIsStale: &isStale
         ) else {
-            return standardized
+            guard let resolvedURL = try? URL(
+                resolvingBookmarkData: bookmarkData,
+                options: [],
+                relativeTo: nil,
+                bookmarkDataIsStale: &isStale
+            ) else {
+                return standardized
+            }
+
+            if isStale {
+                saveRecentBookmark(for: resolvedURL)
+            }
+
+            return resolvedURL.standardizedFileURL
         }
 
         if isStale {
@@ -618,6 +650,28 @@ final class WorkspaceStore: ObservableObject {
 
     private func clearRecentBookmarks() {
         try? FileManager.default.removeItem(at: recentBookmarksFileURL)
+    }
+
+    private func migrateLegacySandboxWorkspaceIfNeeded(to workspaceURL: URL) {
+        let legacyURL = URL(fileURLWithPath: NSHomeDirectory())
+            .appendingPathComponent("Library/Containers/com.meyfroidt.mdviewer/Data/Library/Application Support/MDViewer", isDirectory: true)
+            .standardizedFileURL
+        let destinationURL = workspaceURL.standardizedFileURL
+
+        guard legacyURL != destinationURL,
+              FileManager.default.fileExists(atPath: legacyURL.path),
+              !FileManager.default.fileExists(atPath: destinationURL.path)
+        else { return }
+
+        do {
+            try FileManager.default.createDirectory(
+                at: destinationURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try FileManager.default.copyItem(at: legacyURL, to: destinationURL)
+        } catch {
+            assertionFailure("Unable to migrate legacy workspace: \(error.localizedDescription)")
+        }
     }
 
     private func loadStylesheet(for theme: MarkdownTheme) -> String {
