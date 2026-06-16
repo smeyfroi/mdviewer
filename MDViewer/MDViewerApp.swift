@@ -7,7 +7,7 @@ struct MDViewerApp: App {
     @StateObject private var workspace = WorkspaceStore()
 
     var body: some Scene {
-        WindowGroup {
+        Window("MDViewer", id: "main") {
             ContentView()
                 .environmentObject(workspace)
                 .onAppear {
@@ -22,6 +22,7 @@ struct MDViewerApp: App {
                     appDelegate.open(urls: [url])
                 }
         }
+        .defaultSize(width: 1120, height: 760)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
@@ -157,6 +158,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSWindow.allowsAutomaticWindowTabbing = false
         DispatchQueue.main.async { [weak self] in
             self?.repairQuitMenuItem()
         }
