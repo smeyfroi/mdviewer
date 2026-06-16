@@ -127,8 +127,10 @@ struct MarkdownRenderer {
 
         func flushParagraph() {
             guard !paragraph.isEmpty else { return }
-            let text = paragraph.joined(separator: " ")
-            html.append("<p>\(renderInline(text))</p>")
+            let text = paragraph
+                .map { renderInline($0) }
+                .joined(separator: "<br>\n")
+            html.append("<p>\(text)</p>")
             paragraph.removeAll()
         }
 

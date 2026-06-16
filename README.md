@@ -10,7 +10,7 @@ MDViewer is a native macOS Markdown viewer built with Swift and SwiftUI. It is d
 - Reopen Markdown files from the standard File > Open Recent menu.
 - View multiple Markdown documents in tabs inside one app window.
 - Restore the previous workspace after quitting, including open tabs, selected tab, theme, zoom, edit mode, and outline visibility.
-- Render Markdown in a native SwiftUI preview with support for common blocks, headings, lists, code fences, tables, quotes, rules, and inline formatting.
+- Render Markdown in a native SwiftUI preview with support for common blocks, headings, lists, code fences, tables, quotes, rules, inline formatting, and readable soft line breaks.
 - Toggle an outline sidebar for heading navigation.
 - Search within the rendered preview with highlighted matches and result counts.
 - Zoom the rendered preview in and out.
@@ -71,7 +71,7 @@ Command-line release build:
 xcodebuild -project MDViewer.xcodeproj -scheme MDViewer -configuration Release -derivedDataPath build/DerivedData build
 ```
 
-GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.13` also creates a GitHub Release with `MDViewer.app.zip` attached.
+GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.14` also creates a GitHub Release with `MDViewer.app.zip` attached.
 
 The release app is produced at:
 
