@@ -14,7 +14,7 @@ permissions:
 jobs:
   build:
     name: Build MDViewer
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       APPLE_TEAM_ID: EZCN55TA7J
 
@@ -24,6 +24,11 @@ jobs:
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Show build environment
+        run: |
+          sw_vers
+          xcodebuild -version
 
       - name: Build release app
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
@@ -80,19 +85,21 @@ jobs:
       - name: Verify signed app
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
-          codesign --verify --deep --strict --verbose=2 build/DerivedData/Build/Products/Release/MDViewer.app
+          codesign --verify --deep --strict --verbose=4 build/DerivedData/Build/Products/Release/MDViewer.app
+          codesign -dvvv --entitlements :- build/DerivedData/Build/Products/Release/MDViewer.app
+          codesign -dvvv --entitlements :- build/DerivedData/Build/Products/Release/MDViewer.app/Contents/PlugIns/MDViewerQuickLook.appex
 
       - name: Package app
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: |
           cd build/DerivedData/Build/Products/Release
-          ditto -c -k --sequesterRsrc --keepParent MDViewer.app MDViewer.app.zip
+          ditto -c -k --keepParent MDViewer.app MDViewer.app.zip
 
       - name: Create notarization archive
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
           cd build/DerivedData/Build/Products/Release
-          ditto -c -k --sequesterRsrc --keepParent MDViewer.app MDViewer-notary.zip
+          ditto -c -k --keepParent MDViewer.app MDViewer-notary.zip
 
       - name: Notarize app
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
@@ -112,13 +119,24 @@ jobs:
         run: |
           xcrun stapler staple build/DerivedData/Build/Products/Release/MDViewer.app
           xcrun stapler validate build/DerivedData/Build/Products/Release/MDViewer.app
+          codesign --verify --deep --strict --verbose=4 build/DerivedData/Build/Products/Release/MDViewer.app
           spctl -a -vvv -t exec build/DerivedData/Build/Products/Release/MDViewer.app
 
       - name: Package notarized app
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         run: |
           cd build/DerivedData/Build/Products/Release
-          ditto -c -k --sequesterRsrc --keepParent MDViewer.app MDViewer.app.zip
+          ditto -c -k --keepParent MDViewer.app MDViewer.app.zip
+
+      - name: Verify packaged app
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          VERIFY_DIR="$RUNNER_TEMP/mdviewer-release-verify"
+          mkdir -p "$VERIFY_DIR"
+          ditto -x -k build/DerivedData/Build/Products/Release/MDViewer.app.zip "$VERIFY_DIR"
+          codesign --verify --deep --strict --verbose=4 "$VERIFY_DIR/MDViewer.app"
+          xcrun stapler validate "$VERIFY_DIR/MDViewer.app"
+          spctl -a -vvv -t exec "$VERIFY_DIR/MDViewer.app"
 
       - name: Upload app artifact
         uses: actions/upload-artifact@v4

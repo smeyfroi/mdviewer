@@ -39,7 +39,15 @@ qlmanage -r
 qlmanage -r cache
 ```
 
-For downloaded builds, move `MDViewer.app` to `/Applications` or `~/Applications` and launch it once so macOS can register the embedded extension. If previews stop appearing, confirm `MDViewer Quick Look` is enabled in System Settings under Extensions, then reset Quick Look with the commands above.
+For downloaded builds, move `MDViewer.app` to `/Applications` or `~/Applications` and launch it once so macOS can register the embedded extension. If previews stop appearing, confirm `MDViewer Quick Look` is enabled in System Settings under Extensions, then re-register the installed extension and reset Quick Look:
+
+```sh
+pluginkit -r /Applications/MDViewer.app/Contents/PlugIns/MDViewerQuickLook.appex
+pluginkit -a /Applications/MDViewer.app/Contents/PlugIns/MDViewerQuickLook.appex
+pluginkit -e use -i com.meyfroidt.mdviewer.quicklook
+qlmanage -r
+qlmanage -r cache
+```
 
 ## Build
 
@@ -57,7 +65,7 @@ Command-line release build:
 xcodebuild -project MDViewer.xcodeproj -scheme MDViewer -configuration Release -derivedDataPath build/DerivedData build
 ```
 
-GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.0` also creates a GitHub Release with `MDViewer.app.zip` attached.
+GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.4` also creates a GitHub Release with `MDViewer.app.zip` attached.
 
 The release app is produced at:
 
@@ -67,7 +75,7 @@ build/DerivedData/Build/Products/Release/MDViewer.app
 
 ## Signing and Notarization
 
-MDViewer uses Apple Team ID `EZCN55TA7J`, app bundle ID `com.meyfroidt.mdviewer`, Quick Look bundle ID `com.meyfroidt.mdviewer.quicklook`, and Developer ID signing for Release builds. Branch builds in GitHub Actions remain ad-hoc signed for CI, while `v*` tags build with Developer ID signing, submit the app to Apple notarization, staple the ticket, and publish the notarized zip to GitHub Releases.
+MDViewer uses Apple Team ID `EZCN55TA7J`, app bundle ID `com.meyfroidt.mdviewer`, Quick Look bundle ID `com.meyfroidt.mdviewer.quicklook`, and Developer ID signing for Release builds. Branch builds in GitHub Actions remain ad-hoc signed for CI, while `v*` tags build with Developer ID signing, submit the app to Apple notarization, staple the ticket, verify the final packaged app, and publish the notarized zip to GitHub Releases.
 
 The release workflow expects these GitHub repository secrets:
 
