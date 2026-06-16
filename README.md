@@ -65,7 +65,7 @@ Command-line release build:
 xcodebuild -project MDViewer.xcodeproj -scheme MDViewer -configuration Release -derivedDataPath build/DerivedData build
 ```
 
-GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.4` also creates a GitHub Release with `MDViewer.app.zip` attached.
+GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.5` also creates a GitHub Release with `MDViewer.app.zip` attached.
 
 The release app is produced at:
 

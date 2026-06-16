@@ -97,7 +97,7 @@ final class WorkspaceStore: ObservableObject {
         return tabs.firstIndex { $0.id == selectedTabID }
     }
 
-    func restoreIfNeeded() {
+    func restoreIfNeeded(restoringTabs: Bool = true) {
         guard !hasRestored else { return }
         hasRestored = true
 
@@ -109,8 +109,10 @@ final class WorkspaceStore: ObservableObject {
         zoomScale = clampZoom(snapshot.zoomScale)
         editMode = snapshot.editMode
         isOutlineVisible = snapshot.isOutlineVisible ?? false
-        tabs = snapshot.tabs.compactMap(restoreTab)
-        selectedTabID = tabs.contains { $0.id == snapshot.selectedTabID } ? snapshot.selectedTabID : tabs.first?.id
+        if restoringTabs {
+            tabs = snapshot.tabs.compactMap(restoreTab)
+            selectedTabID = tabs.contains { $0.id == snapshot.selectedTabID } ? snapshot.selectedTabID : tabs.first?.id
+        }
         refreshRecentDocuments()
     }
 
@@ -158,9 +160,10 @@ final class WorkspaceStore: ObservableObject {
     }
 
     func refreshRecentDocuments() {
-        recentDocuments = NSDocumentController.shared.recentDocumentURLs
-            .map(\.standardizedFileURL)
+        recentDocuments = recentBookmarks().keys
+            .map { URL(fileURLWithPath: $0).standardizedFileURL }
             .filter(isSupportedMarkdown)
+            .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
             .map(RecentDocument.init)
     }
 

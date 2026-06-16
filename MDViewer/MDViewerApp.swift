@@ -11,12 +11,15 @@ struct MDViewerApp: App {
             ContentView()
                 .environmentObject(workspace)
                 .onAppear {
-                    appDelegate.workspace = workspace
-                    workspace.restoreIfNeeded()
+                    let launchURLs = appDelegate.attach(workspace: workspace)
+                    workspace.restoreIfNeeded(restoringTabs: launchURLs.isEmpty)
+                    if !launchURLs.isEmpty {
+                        workspace.open(urls: launchURLs)
+                    }
                     workspace.refreshRecentDocuments()
                 }
                 .onOpenURL { url in
-                    workspace.open(urls: [url])
+                    appDelegate.open(urls: [url])
                 }
         }
         .windowStyle(.titleBar)
@@ -134,6 +137,24 @@ struct MDViewerApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     weak var workspace: WorkspaceStore?
+    private var pendingOpenURLs: [URL] = []
+
+    func attach(workspace: WorkspaceStore) -> [URL] {
+        self.workspace = workspace
+        let urls = pendingOpenURLs
+        pendingOpenURLs.removeAll()
+        return urls
+    }
+
+    func open(urls: [URL]) {
+        guard !urls.isEmpty else { return }
+
+        if let workspace {
+            workspace.open(urls: urls)
+        } else {
+            pendingOpenURLs.append(contentsOf: urls)
+        }
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         DispatchQueue.main.async { [weak self] in
@@ -147,7 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        workspace?.open(urls: urls)
+        open(urls: urls)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
