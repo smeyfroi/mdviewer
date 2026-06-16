@@ -1,4 +1,5 @@
 import Foundation
+import Markdown
 
 struct MarkdownHeading: Identifiable, Equatable {
     let id: String
@@ -17,7 +18,10 @@ struct MarkdownRenderer {
     }
 
     static func render(markdown: String, title: String, stylesheet: String, errorMessage: String? = nil) -> RenderedMarkdown {
-        let rendered = renderBlocks(markdown, collectHeadings: true)
+        let document = Document(parsing: markdown)
+        var visitor = HTMLRenderVisitor()
+        visitor.visit(document)
+
         let errorBanner = errorMessage.map {
             "<aside class=\"app-error\"><strong>File warning</strong><span>\(escapeHTML($0))</span></aside>"
         } ?? ""
@@ -37,13 +41,13 @@ struct MarkdownRenderer {
         <body>
           <main class="markdown-body">
             \(errorBanner)
-            \(rendered.html)
+            \(visitor.result)
           </main>
         </body>
         </html>
         """
 
-        return RenderedMarkdown(html: html, headings: rendered.headings)
+        return RenderedMarkdown(html: html, headings: visitor.headings)
     }
 
     private static let baseCSS = """
@@ -95,6 +99,16 @@ struct MarkdownRenderer {
       scroll-margin-top: 28px;
     }
 
+    .markdown-body li.task-list-item {
+      list-style: none;
+      margin-left: -1.4em;
+    }
+
+    .markdown-body li.task-list-item > input[type="checkbox"] {
+      margin: 0 0.45em 0 0;
+      vertical-align: middle;
+    }
+
     .mdviewer-find-highlight {
       border-radius: 3px;
       background: color-mix(in srgb, #ffd54f 68%, transparent);
@@ -107,379 +121,275 @@ struct MarkdownRenderer {
       }
     }
     """
+}
 
-    private struct RenderedBlocks {
-        let html: String
-        let headings: [MarkdownHeading]
+/// Walks a parsed swift-markdown (cmark-gfm) tree and emits HTML.
+///
+/// Output is escaped by default — text, inline/raw HTML, and code are all
+/// HTML-escaped, so a Markdown file can never inject live markup into the
+/// preview. Soft line breaks are rendered as `<br>` to preserve the source's
+/// visual line breaks, matching the viewer's established behavior.
+private struct HTMLRenderVisitor: MarkupWalker {
+    var result = ""
+    var headings: [MarkdownHeading] = []
+
+    private var usedAnchors: [String: Int] = [:]
+    private var inTableHead = false
+    private var tableColumnAlignments: [Table.ColumnAlignment?]? = nil
+    private var currentTableColumn = 0
+
+    // MARK: Block elements
+
+    mutating func visitBlockQuote(_ blockQuote: BlockQuote) {
+        result += "<blockquote>\n"
+        descendInto(blockQuote)
+        result += "</blockquote>\n"
     }
 
-    private static func renderBlocks(_ markdown: String, collectHeadings: Bool = false) -> RenderedBlocks {
-        let lines = markdown
-            .replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\r", with: "\n")
-            .components(separatedBy: "\n")
-
-        var html: [String] = []
-        var headings: [MarkdownHeading] = []
-        var usedAnchors: [String: Int] = [:]
-        var paragraph: [String] = []
-        var index = 0
-
-        func flushParagraph() {
-            guard !paragraph.isEmpty else { return }
-            let text = paragraph
-                .map { renderInline($0) }
-                .joined(separator: "<br>\n")
-            html.append("<p>\(text)</p>")
-            paragraph.removeAll()
-        }
-
-        while index < lines.count {
-            let line = lines[index]
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed.isEmpty {
-                flushParagraph()
-                index += 1
-                continue
-            }
-
-            if let fence = codeFence(in: trimmed) {
-                flushParagraph()
-                let rendered = renderCodeFence(lines: lines, startIndex: index, marker: fence.marker, language: fence.language)
-                html.append(rendered.html)
-                index = rendered.nextIndex
-                continue
-            }
-
-            if let heading = heading(in: trimmed) {
-                flushParagraph()
-                let anchor = uniqueAnchor(for: heading.text, usedAnchors: &usedAnchors)
-                if collectHeadings {
-                    headings.append(MarkdownHeading(id: anchor, level: heading.level, title: heading.text))
-                }
-                html.append("<h\(heading.level) id=\"\(escapeAttribute(anchor))\">\(renderInline(heading.text))</h\(heading.level)>")
-                index += 1
-                continue
-            }
-
-            if isHorizontalRule(trimmed) {
-                flushParagraph()
-                html.append("<hr>")
-                index += 1
-                continue
-            }
-
-            if isTableHeader(lines, at: index) {
-                flushParagraph()
-                let rendered = renderTable(lines: lines, startIndex: index)
-                html.append(rendered.html)
-                index = rendered.nextIndex
-                continue
-            }
-
-            if let quote = blockquote(lines: lines, startIndex: index) {
-                flushParagraph()
-                html.append("<blockquote>\(quote.html)</blockquote>")
-                index = quote.nextIndex
-                continue
-            }
-
-            if let list = listBlock(lines: lines, startIndex: index) {
-                flushParagraph()
-                html.append(list.html)
-                index = list.nextIndex
-                continue
-            }
-
-            paragraph.append(trimmed)
-            index += 1
-        }
-
-        flushParagraph()
-        return RenderedBlocks(html: html.joined(separator: "\n"), headings: headings)
+    mutating func visitCodeBlock(_ codeBlock: CodeBlock) {
+        let languageAttr = codeBlock.language.map { " class=\"language-\(escapeAttribute($0))\"" } ?? ""
+        var code = codeBlock.code
+        if code.hasSuffix("\n") { code.removeLast() }
+        result += "<pre><code\(languageAttr)>\(escapeHTML(code))</code></pre>\n"
     }
 
-    private static func heading(in line: String) -> (level: Int, text: String)? {
-        var level = 0
-        for character in line {
-            if character == "#" {
-                level += 1
-            } else {
-                break
-            }
-        }
-
-        guard (1...6).contains(level),
-              line.dropFirst(level).first == " "
-        else { return nil }
-
-        return (level, String(line.dropFirst(level + 1)).trimmingCharacters(in: .whitespaces))
+    mutating func visitHeading(_ heading: Heading) {
+        let title = heading.plainText
+        let anchor = uniqueAnchor(for: title)
+        headings.append(MarkdownHeading(id: anchor, level: heading.level, title: title))
+        result += "<h\(heading.level) id=\"\(escapeAttribute(anchor))\">"
+        descendInto(heading)
+        result += "</h\(heading.level)>\n"
     }
 
-    private static func codeFence(in line: String) -> (marker: String, language: String)? {
-        if line.hasPrefix("```") {
-            return ("```", String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces))
-        }
-
-        if line.hasPrefix("~~~") {
-            return ("~~~", String(line.dropFirst(3)).trimmingCharacters(in: .whitespaces))
-        }
-
-        return nil
+    mutating func visitThematicBreak(_ thematicBreak: ThematicBreak) {
+        result += "<hr>\n"
     }
 
-    private static func renderCodeFence(
-        lines: [String],
-        startIndex: Int,
-        marker: String,
-        language: String
-    ) -> (html: String, nextIndex: Int) {
-        var code: [String] = []
-        var index = startIndex + 1
+    mutating func visitHTMLBlock(_ html: HTMLBlock) {
+        // Safe-by-default: show raw HTML blocks as literal text rather than injecting them.
+        var raw = html.rawHTML
+        if raw.hasSuffix("\n") { raw.removeLast() }
+        result += "<p>\(escapeHTML(raw).replacingOccurrences(of: "\n", with: "<br>\n"))</p>\n"
+    }
 
-        while index < lines.count {
-            if lines[index].trimmingCharacters(in: .whitespaces).hasPrefix(marker) {
-                let className = language.isEmpty ? "" : " class=\"language-\(escapeAttribute(language))\""
-                return ("<pre><code\(className)>\(escapeHTML(code.joined(separator: "\n")))</code></pre>", index + 1)
-            }
-
-            code.append(lines[index])
-            index += 1
+    mutating func visitListItem(_ listItem: ListItem) {
+        if let checkbox = listItem.checkbox {
+            let checked = checkbox == .checked ? " checked" : ""
+            result += "<li class=\"task-list-item\"><input type=\"checkbox\" disabled\(checked)> "
+        } else {
+            result += "<li>"
         }
 
-        return ("<pre><code>\(escapeHTML(code.joined(separator: "\n")))</code></pre>", index)
-    }
-
-    private static func isHorizontalRule(_ line: String) -> Bool {
-        let compact = line.replacingOccurrences(of: " ", with: "")
-        guard compact.count >= 3 else { return false }
-        return compact.allSatisfy { $0 == "-" } || compact.allSatisfy { $0 == "*" } || compact.allSatisfy { $0 == "_" }
-    }
-
-    private static func blockquote(lines: [String], startIndex: Int) -> (html: String, nextIndex: Int)? {
-        var quoteLines: [String] = []
-        var index = startIndex
-
-        while index < lines.count {
-            let trimmed = lines[index].trimmingCharacters(in: .whitespaces)
-            guard trimmed.hasPrefix(">") else { break }
-            quoteLines.append(String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces))
-            index += 1
+        // Render single-paragraph items "tight" (no <p> wrapper) to match a
+        // compact list look; items with multiple/other blocks keep full markup.
+        let children = Array(listItem.children)
+        if children.count == 1, let paragraph = children.first as? Paragraph {
+            descendInto(paragraph)
+        } else {
+            for child in children { visit(child) }
         }
 
-        guard !quoteLines.isEmpty else { return nil }
-        return (renderBlocks(quoteLines.joined(separator: "\n")).html, index)
+        result += "</li>\n"
     }
 
-    private static func listBlock(lines: [String], startIndex: Int) -> (html: String, nextIndex: Int)? {
-        guard let first = listItem(from: lines[startIndex]) else { return nil }
+    mutating func visitOrderedList(_ orderedList: OrderedList) {
+        let start = orderedList.startIndex != 1 ? " start=\"\(orderedList.startIndex)\"" : ""
+        result += "<ol\(start)>\n"
+        descendInto(orderedList)
+        result += "</ol>\n"
+    }
 
-        var items: [String] = []
-        var index = startIndex
+    mutating func visitUnorderedList(_ unorderedList: UnorderedList) {
+        result += "<ul>\n"
+        descendInto(unorderedList)
+        result += "</ul>\n"
+    }
 
-        while index < lines.count {
-            guard let item = listItem(from: lines[index]), item.ordered == first.ordered else { break }
-            items.append("<li>\(renderInline(item.text))</li>")
-            index += 1
+    mutating func visitParagraph(_ paragraph: Paragraph) {
+        result += "<p>"
+        descendInto(paragraph)
+        result += "</p>\n"
+    }
+
+    mutating func visitTable(_ table: Table) {
+        result += "<table>\n"
+        tableColumnAlignments = table.columnAlignments
+        descendInto(table)
+        tableColumnAlignments = nil
+        result += "</table>\n"
+    }
+
+    mutating func visitTableHead(_ tableHead: Table.Head) {
+        result += "<thead>\n<tr>\n"
+        inTableHead = true
+        currentTableColumn = 0
+        descendInto(tableHead)
+        inTableHead = false
+        result += "</tr>\n</thead>\n"
+    }
+
+    mutating func visitTableBody(_ tableBody: Table.Body) {
+        guard !tableBody.isEmpty else { return }
+        result += "<tbody>\n"
+        descendInto(tableBody)
+        result += "</tbody>\n"
+    }
+
+    mutating func visitTableRow(_ tableRow: Table.Row) {
+        result += "<tr>\n"
+        currentTableColumn = 0
+        descendInto(tableRow)
+        result += "</tr>\n"
+    }
+
+    mutating func visitTableCell(_ tableCell: Table.Cell) {
+        guard let alignments = tableColumnAlignments, currentTableColumn < alignments.count else { return }
+        guard tableCell.colspan > 0, tableCell.rowspan > 0 else { return }
+
+        let element = inTableHead ? "th" : "td"
+        result += "<\(element)"
+
+        if let alignment = alignments[currentTableColumn] {
+            result += " style=\"text-align:\(cssAlignment(alignment))\""
         }
+        currentTableColumn += 1
 
-        let tag = first.ordered ? "ol" : "ul"
-        return ("<\(tag)>\n\(items.joined(separator: "\n"))\n</\(tag)>", index)
+        if tableCell.rowspan > 1 { result += " rowspan=\"\(tableCell.rowspan)\"" }
+        if tableCell.colspan > 1 { result += " colspan=\"\(tableCell.colspan)\"" }
+
+        result += ">"
+        descendInto(tableCell)
+        result += "</\(element)>\n"
     }
 
-    private static func listItem(from line: String) -> (ordered: Bool, text: String)? {
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
-        guard trimmed.count > 2 else { return nil }
+    // MARK: Inline elements
 
-        for marker in ["- ", "* ", "+ "] where trimmed.hasPrefix(marker) {
-            return (false, String(trimmed.dropFirst(marker.count)).trimmingCharacters(in: .whitespaces))
+    mutating func visitText(_ text: Text) {
+        result += escapeHTML(text.string)
+    }
+
+    mutating func visitInlineCode(_ inlineCode: InlineCode) {
+        result += "<code>\(escapeHTML(inlineCode.code))</code>"
+    }
+
+    mutating func visitEmphasis(_ emphasis: Emphasis) {
+        printInline(tag: "em", emphasis)
+    }
+
+    mutating func visitStrong(_ strong: Strong) {
+        printInline(tag: "strong", strong)
+    }
+
+    mutating func visitStrikethrough(_ strikethrough: Strikethrough) {
+        printInline(tag: "del", strikethrough)
+    }
+
+    mutating func visitImage(_ image: Image) {
+        result += "<img"
+        if let source = image.source, !source.isEmpty {
+            result += " src=\"\(safeURL(source))\""
         }
-
-        var digits = ""
-        for character in trimmed {
-            if character.isNumber {
-                digits.append(character)
-            } else {
-                break
-            }
+        result += " alt=\"\(escapeAttribute(image.plainText))\""
+        if let title = image.title, !title.isEmpty {
+            result += " title=\"\(escapeAttribute(title))\""
         }
-
-        guard !digits.isEmpty else { return nil }
-        let remainder = trimmed.dropFirst(digits.count)
-        guard remainder.hasPrefix(". ") || remainder.hasPrefix(") ") else { return nil }
-        return (true, String(remainder.dropFirst(2)).trimmingCharacters(in: .whitespaces))
+        result += ">"
     }
 
-    private static func isTableHeader(_ lines: [String], at index: Int) -> Bool {
-        guard index + 1 < lines.count else { return false }
-        return splitTableRow(lines[index]).count > 1 && isTableDivider(lines[index + 1])
+    mutating func visitLink(_ link: Link) {
+        result += "<a"
+        if let destination = link.destination {
+            result += " href=\"\(safeURL(destination))\""
+        }
+        result += ">"
+        descendInto(link)
+        result += "</a>"
     }
 
-    private static func isTableDivider(_ line: String) -> Bool {
-        let cells = splitTableRow(line)
-        guard cells.count > 1 else { return false }
-        return cells.allSatisfy { cell in
-            let compact = cell.trimmingCharacters(in: .whitespaces)
-            guard compact.count >= 3 else { return false }
-            return compact.allSatisfy { $0 == "-" || $0 == ":" }
+    mutating func visitInlineHTML(_ inlineHTML: InlineHTML) {
+        // Safe-by-default: escape inline raw HTML instead of passing it through.
+        result += escapeHTML(inlineHTML.rawHTML)
+    }
+
+    mutating func visitSymbolLink(_ symbolLink: SymbolLink) {
+        if let destination = symbolLink.destination {
+            result += "<code>\(escapeHTML(destination))</code>"
         }
     }
 
-    private static func renderTable(lines: [String], startIndex: Int) -> (html: String, nextIndex: Int) {
-        let headers = splitTableRow(lines[startIndex])
-        var index = startIndex + 2
-        var rows: [[String]] = []
-
-        while index < lines.count {
-            let cells = splitTableRow(lines[index])
-            guard cells.count > 1 else { break }
-            rows.append(cells)
-            index += 1
-        }
-
-        let head = headers.map { "<th>\(renderInline($0))</th>" }.joined()
-        let body = rows.map { row in
-            "<tr>\(row.map { "<td>\(renderInline($0))</td>" }.joined())</tr>"
-        }.joined(separator: "\n")
-
-        return ("<table><thead><tr>\(head)</tr></thead><tbody>\(body)</tbody></table>", index)
+    mutating func visitLineBreak(_ lineBreak: LineBreak) {
+        result += "<br>\n"
     }
 
-    private static func splitTableRow(_ line: String) -> [String] {
-        var trimmed = line.trimmingCharacters(in: .whitespaces)
-        if trimmed.hasPrefix("|") {
-            trimmed.removeFirst()
-        }
-        if trimmed.hasSuffix("|") {
-            trimmed.removeLast()
-        }
-        return trimmed.split(separator: "|", omittingEmptySubsequences: false)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
+    mutating func visitSoftBreak(_ softBreak: SoftBreak) {
+        result += "<br>\n"
     }
 
-    private static func uniqueAnchor(for text: String, usedAnchors: inout [String: Int]) -> String {
+    // MARK: Helpers
+
+    private mutating func printInline(tag: String, _ content: Markup) {
+        result += "<\(tag)>"
+        descendInto(content)
+        result += "</\(tag)>"
+    }
+
+    private func cssAlignment(_ alignment: Table.ColumnAlignment) -> String {
+        switch alignment {
+        case .left: "left"
+        case .center: "center"
+        case .right: "right"
+        }
+    }
+
+    private mutating func uniqueAnchor(for text: String) -> String {
         let base = slug(for: text)
         let count = usedAnchors[base, default: 0]
         usedAnchors[base] = count + 1
         return count == 0 ? base : "\(base)-\(count + 1)"
     }
+}
 
-    private static func slug(for text: String) -> String {
-        var slug = ""
-        var previousWasSeparator = false
+// MARK: - Shared formatting helpers
 
-        for character in text.lowercased() {
-            if character.isLetter || character.isNumber {
-                slug.append(character)
-                previousWasSeparator = false
-            } else if !previousWasSeparator {
-                slug.append("-")
-                previousWasSeparator = true
-            }
+private func slug(for text: String) -> String {
+    var slug = ""
+    var previousWasSeparator = false
+
+    for character in text.lowercased() {
+        if character.isLetter || character.isNumber {
+            slug.append(character)
+            previousWasSeparator = false
+        } else if !previousWasSeparator {
+            slug.append("-")
+            previousWasSeparator = true
         }
-
-        let trimmed = slug.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-        return trimmed.isEmpty ? "section" : trimmed
     }
 
-    private static func renderInline(_ raw: String) -> String {
-        var codeSpans: [String] = []
-        var text = replace(raw, pattern: "`([^`]+)`") { groups in
-            let escaped = "<code>\(escapeHTML(groups[1]))</code>"
-            codeSpans.append(escaped)
-            return "\u{E000}\(codeSpans.count - 1)\u{E001}"
-        }
+    let trimmed = slug.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+    return trimmed.isEmpty ? "section" : trimmed
+}
 
-        text = escapeHTML(text)
+private func safeURL(_ raw: String) -> String {
+    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    let lowercased = trimmed.lowercased()
 
-        text = replace(text, pattern: "!\\[([^\\]]*)\\]\\(([^\\s\\)]+)\\)") { groups in
-            let alt = escapeAttribute(groups[1])
-            let src = safeURL(groups[2])
-            return "<img src=\"\(src)\" alt=\"\(alt)\">"
-        }
-
-        text = replace(text, pattern: "\\[([^\\]]+)\\]\\(([^\\s\\)]+)\\)") { groups in
-            let label = groups[1]
-            let href = safeURL(groups[2])
-            return "<a href=\"\(href)\">\(label)</a>"
-        }
-
-        text = replace(text, pattern: "\\*\\*([^*]+)\\*\\*") { groups in
-            "<strong>\(groups[1])</strong>"
-        }
-
-        text = replace(text, pattern: "__([^_]+)__") { groups in
-            "<strong>\(groups[1])</strong>"
-        }
-
-        text = replace(text, pattern: "(^|\\s)\\*([^*]+)\\*") { groups in
-            "\(groups[1])<em>\(groups[2])</em>"
-        }
-
-        text = replace(text, pattern: "(^|\\s)_([^_]+)_") { groups in
-            "\(groups[1])<em>\(groups[2])</em>"
-        }
-
-        for (index, code) in codeSpans.enumerated() {
-            text = text.replacingOccurrences(of: "\u{E000}\(index)\u{E001}", with: code)
-        }
-
-        return text
+    if lowercased.hasPrefix("javascript:") || lowercased.hasPrefix("data:text/html") {
+        return "#"
     }
 
-    private static func replace(_ text: String, pattern: String, transform: ([String]) -> String) -> String {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return text }
+    return escapeAttribute(trimmed)
+}
 
-        let range = NSRange(text.startIndex..<text.endIndex, in: text)
-        let matches = regex.matches(in: text, range: range)
-        guard !matches.isEmpty else { return text }
+private func escapeHTML(_ value: String) -> String {
+    value
+        .replacingOccurrences(of: "&", with: "&amp;")
+        .replacingOccurrences(of: "<", with: "&lt;")
+        .replacingOccurrences(of: ">", with: "&gt;")
+}
 
-        var result = ""
-        var cursor = text.startIndex
-
-        for match in matches {
-            guard let fullRange = Range(match.range, in: text) else { continue }
-            result += String(text[cursor..<fullRange.lowerBound])
-
-            var groups: [String] = []
-            for groupIndex in 0..<match.numberOfRanges {
-                if let range = Range(match.range(at: groupIndex), in: text) {
-                    groups.append(String(text[range]))
-                } else {
-                    groups.append("")
-                }
-            }
-
-            result += transform(groups)
-            cursor = fullRange.upperBound
-        }
-
-        result += String(text[cursor..<text.endIndex])
-        return result
-    }
-
-    private static func safeURL(_ raw: String) -> String {
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        let lowercased = trimmed.lowercased()
-
-        if lowercased.hasPrefix("javascript:") || lowercased.hasPrefix("data:text/html") {
-            return "#"
-        }
-
-        return escapeAttribute(trimmed)
-    }
-
-    private static func escapeHTML(_ value: String) -> String {
-        value
-            .replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
-    }
-
-    private static func escapeAttribute(_ value: String) -> String {
-        escapeHTML(value)
-            .replacingOccurrences(of: "\"", with: "&quot;")
-            .replacingOccurrences(of: "'", with: "&#39;")
-    }
+private func escapeAttribute(_ value: String) -> String {
+    escapeHTML(value)
+        .replacingOccurrences(of: "\"", with: "&quot;")
+        .replacingOccurrences(of: "'", with: "&#39;")
 }
