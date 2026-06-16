@@ -65,6 +65,34 @@ The release app is produced at:
 build/DerivedData/Build/Products/Release/MDViewer.app
 ```
 
+## Signing and Notarization
+
+MDViewer uses Apple Team ID `EZCN55TA7J`, app bundle ID `com.meyfroidt.mdviewer`, Quick Look bundle ID `com.meyfroidt.mdviewer.quicklook`, and Developer ID signing for Release builds. Branch builds in GitHub Actions remain ad-hoc signed for CI, while `v*` tags build with Developer ID signing, submit the app to Apple notarization, staple the ticket, and publish the notarized zip to GitHub Releases.
+
+The release workflow expects these GitHub repository secrets:
+
+- `DEVELOPER_ID_APPLICATION_CERTIFICATE_BASE64`: base64-encoded `.p12` export of the Developer ID Application certificate.
+- `DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD`: password used when exporting the `.p12`.
+- `APPLE_ID`: Apple ID used for notarization.
+- `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for the Apple ID.
+
+After exporting the Developer ID Application certificate from Keychain Access as a password-protected `.p12`, copy it into the GitHub secret with:
+
+```sh
+base64 -i DeveloperIDApplication.p12 | tr -d '\n' | gh secret set DEVELOPER_ID_APPLICATION_CERTIFICATE_BASE64 -R smeyfroi/mdviewer
+gh secret set DEVELOPER_ID_APPLICATION_CERTIFICATE_PASSWORD -R smeyfroi/mdviewer
+gh secret set APPLE_ID -R smeyfroi/mdviewer
+gh secret set APPLE_APP_SPECIFIC_PASSWORD -R smeyfroi/mdviewer
+```
+
+Useful checks for a local signed build:
+
+```sh
+codesign --verify --deep --strict --verbose=2 build/DerivedData/Build/Products/Release/MDViewer.app
+spctl -a -vvv -t exec build/DerivedData/Build/Products/Release/MDViewer.app
+xcrun stapler validate build/DerivedData/Build/Products/Release/MDViewer.app
+```
+
 ## Project Layout
 
 - `MDViewer/ContentView.swift` contains the main SwiftUI app surface and native rendered preview.
