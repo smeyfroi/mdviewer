@@ -9,10 +9,14 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            if workspace.tabs.isEmpty {
-                EmptyWorkspaceView(openAction: workspace.openPanel)
-            } else {
-                VStack(spacing: 0) {
+            VStack(spacing: 0) {
+                appToolbar
+
+                Divider()
+
+                if workspace.tabs.isEmpty {
+                    EmptyWorkspaceView(openAction: workspace.openPanel)
+                } else {
                     DocumentTabStrip()
 
                     Divider()
@@ -37,144 +41,170 @@ struct ContentView: View {
         .onDrop(of: [UTType.fileURL.identifier], isTargeted: $isDropTargeted) { providers in
             workspace.handleDrop(providers)
         }
-        .onChange(of: workspace.isFindVisible) {
-            if workspace.isFindVisible {
-                findFieldIsFocused = true
+        .onChange(of: workspace.findFocusRequest) {
+            findFieldIsFocused = true
+        }
+    }
+
+    private var appToolbar: some View {
+        HStack(spacing: 10) {
+            outlineToggle
+            documentActionGroup
+
+            Spacer(minLength: 24)
+
+            previewControlGroup
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 42)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+
+    private var previewControlGroup: some View {
+        HStack(spacing: 10) {
+            zoomGroup
+            styleGroup
+        }
+        .labelStyle(.iconOnly)
+        .controlSize(.regular)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var outlineToggle: some View {
+        Toggle(isOn: outlineBinding) {
+            Label("Outline", systemImage: "sidebar.left")
+        }
+        .toggleStyle(.button)
+        .labelStyle(.iconOnly)
+        .disabled(!workspace.hasActiveDocument)
+        .accessibilityLabel("Outline")
+        .help(workspace.isOutlineVisible ? "Hide document outline" : "Show document outline")
+    }
+
+    private var documentActionGroup: some View {
+        HStack(spacing: 10) {
+            documentButtons
+            findGroup
+        }
+        .labelStyle(.iconOnly)
+        .controlSize(.regular)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var documentButtons: some View {
+        ControlGroup {
+            Button(action: workspace.openPanel) {
+                Label("Open", systemImage: "folder")
+            }
+            .accessibilityLabel("Open Markdown Files")
+            .help("Open Markdown files")
+
+            Button(action: workspace.reloadActiveDocument) {
+                Label("Reload", systemImage: "arrow.clockwise")
+            }
+            .disabled(!workspace.canUseActiveFileCommands)
+            .accessibilityLabel("Reload from Disk")
+            .help("Reload from disk")
+
+            Button(action: workspace.saveActiveDocument) {
+                Label("Save", systemImage: "square.and.arrow.down")
+            }
+            .disabled(!workspace.canSaveActiveDocument)
+            .accessibilityLabel("Save")
+            .help("Save the active document")
+
+            Toggle(isOn: editModeBinding) {
+                Label("Edit", systemImage: "pencil")
+            }
+            .toggleStyle(.button)
+            .disabled(!workspace.hasActiveDocument)
+            .accessibilityLabel("Edit")
+            .help(workspace.editMode ? "Hide editor" : "Show editor")
+        }
+    }
+
+    private var findGroup: some View {
+        HStack(spacing: 8) {
+            findField
+            findCount
+        }
+    }
+
+    private var findField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+            TextField("Find", text: $workspace.findQuery)
+                .textFieldStyle(.plain)
+                .focused($findFieldIsFocused)
+                .disabled(!workspace.hasActiveDocument)
+                .accessibilityLabel("Find")
+        }
+        .padding(.horizontal, 8)
+        .frame(width: 180, height: 26)
+        .background(.quaternary.opacity(0.75), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(.separator.opacity(0.55), lineWidth: 1)
+        }
+        .help("Find in preview")
+    }
+
+    @ViewBuilder
+    private var findCount: some View {
+        if !findResultText.isEmpty {
+            Text(findResultText)
+                .font(.caption.monospacedDigit().weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(.quaternary, in: Capsule())
+                .accessibilityLabel("Find Result Count")
+                .accessibilityValue(findResultText)
+                .help("Matching results")
+        }
+    }
+
+    private var zoomGroup: some View {
+        HStack(spacing: 4) {
+            Button(action: workspace.zoomOut) {
+                Label("Zoom Out", systemImage: "minus.magnifyingglass")
+            }
+            .disabled(!workspace.hasActiveDocument)
+            .accessibilityLabel("Zoom Out")
+            .help("Zoom out")
+
+            Text(workspace.zoomLabel)
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 46)
+                .accessibilityLabel("Zoom")
+                .help("Current zoom: \(workspace.zoomLabel)")
+
+            Button(action: workspace.zoomIn) {
+                Label("Zoom In", systemImage: "plus.magnifyingglass")
+            }
+            .disabled(!workspace.hasActiveDocument)
+            .accessibilityLabel("Zoom In")
+            .help("Zoom in")
+        }
+    }
+
+    private var styleGroup: some View {
+        Picker("Style", selection: themeBinding) {
+            ForEach(MarkdownTheme.allCases) { theme in
+                Text(theme.displayName).tag(theme)
             }
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
-                Button(action: workspace.openPanel) {
-                    Label("Open", systemImage: "folder")
-                }
-                .accessibilityLabel("Open Markdown Files")
-                .help("Open Markdown files")
-            }
-
-            ToolbarItemGroup(placement: .primaryAction) {
-                Button(action: workspace.reloadActiveDocument) {
-                    Label("Reload", systemImage: "arrow.clockwise")
-                }
-                .disabled(!workspace.canUseActiveFileCommands)
-                .accessibilityLabel("Reload from Disk")
-                .help("Reload from disk")
-
-                Button(action: workspace.saveActiveDocument) {
-                    Label("Save", systemImage: "square.and.arrow.down")
-                }
-                .disabled(!workspace.canSaveActiveDocument)
-                .accessibilityLabel("Save")
-                .help("Save the active document")
-
-                Toggle(isOn: editModeBinding) {
-                    Label("Edit", systemImage: "pencil")
-                }
-                .toggleStyle(.button)
-                .disabled(workspace.selectedTabID == nil)
-                .accessibilityLabel("Edit")
-                .help(workspace.editMode ? "Hide editor" : "Show editor")
-
-                Toggle(isOn: outlineBinding) {
-                    Label("Outline", systemImage: "sidebar.left")
-                }
-                .toggleStyle(.button)
-                .disabled(workspace.selectedTabID == nil)
-                .accessibilityLabel("Outline")
-                .help(workspace.isOutlineVisible ? "Hide document outline" : "Show document outline")
-            }
-
-            ToolbarItem(placement: .primaryAction) {
-                if workspace.isFindVisible {
-                    HStack(spacing: 10) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "magnifyingglass")
-                                .foregroundStyle(.secondary)
-                                .accessibilityHidden(true)
-
-                            TextField("Find", text: $workspace.findQuery)
-                                .textFieldStyle(.plain)
-                                .focused($findFieldIsFocused)
-                                .accessibilityLabel("Find")
-                        }
-                        .padding(.horizontal, 8)
-                        .frame(width: 196, height: 26)
-                        .background(.quaternary.opacity(0.75), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(.separator.opacity(0.55), lineWidth: 1)
-                        }
-                        .help("Find in preview")
-
-                        if !findResultText.isEmpty {
-                            Text(findResultText)
-                                .font(.caption.monospacedDigit().weight(.medium))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .fixedSize(horizontal: true, vertical: false)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(.quaternary, in: Capsule())
-                                .accessibilityLabel("Find Result Count")
-                                .accessibilityValue(findResultText)
-                                .help("Matching results")
-                        }
-
-                        Button {
-                            workspace.toggleFind()
-                        } label: {
-                            Label("Close Find", systemImage: "xmark.circle.fill")
-                        }
-                        .buttonStyle(.borderless)
-                        .accessibilityLabel("Close Find")
-                        .help("Close find")
-                    }
-                } else {
-                    Toggle(isOn: findVisibleBinding) {
-                        Label("Find", systemImage: "magnifyingglass")
-                    }
-                    .toggleStyle(.button)
-                    .disabled(workspace.selectedTabID == nil)
-                    .accessibilityLabel("Find")
-                    .help("Find in preview")
-                }
-            }
-
-            ToolbarItemGroup(placement: .status) {
-                Button(action: workspace.zoomOut) {
-                    Label("Zoom Out", systemImage: "minus.magnifyingglass")
-                }
-                .disabled(workspace.selectedTabID == nil)
-                .accessibilityLabel("Zoom Out")
-                .help("Zoom out")
-
-                Text(workspace.zoomLabel)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
-                    .frame(width: 46)
-                    .accessibilityLabel("Zoom")
-                    .help("Current zoom: \(workspace.zoomLabel)")
-
-                Button(action: workspace.zoomIn) {
-                    Label("Zoom In", systemImage: "plus.magnifyingglass")
-                }
-                .disabled(workspace.selectedTabID == nil)
-                .accessibilityLabel("Zoom In")
-                .help("Zoom in")
-            }
-
-            ToolbarItem(placement: .primaryAction) {
-                Picker("Style", selection: themeBinding) {
-                    ForEach(MarkdownTheme.allCases) { theme in
-                        Text(theme.displayName).tag(theme)
-                    }
-                }
-                .pickerStyle(.menu)
-                .frame(width: 128)
-                .disabled(workspace.selectedTabID == nil)
-                .accessibilityLabel("Preview Style")
-                .help("Choose preview style")
-            }
-        }
+        .pickerStyle(.menu)
+        .frame(width: 128)
+        .disabled(!workspace.hasActiveDocument)
+        .accessibilityLabel("Preview Style")
+        .help("Choose preview style")
     }
 
     private var findResultText: String {
@@ -208,16 +238,6 @@ struct ContentView: View {
         )
     }
 
-    private var findVisibleBinding: Binding<Bool> {
-        Binding(
-            get: { workspace.isFindVisible },
-            set: { isVisible in
-                if workspace.isFindVisible != isVisible {
-                    workspace.toggleFind()
-                }
-            }
-        )
-    }
 }
 
 private struct EmptyWorkspaceView: View {
@@ -418,7 +438,7 @@ private struct MarkdownPane: View {
             document: document,
             zoomScale: workspace.zoomScale,
             theme: workspace.theme,
-            findQuery: workspace.isFindVisible ? workspace.findQuery : "",
+            findQuery: workspace.findQuery,
             scrollRequest: workspace.scrollRequest?.tabID == tab.id ? workspace.scrollRequest : nil,
             onFindResult: { count in
                 workspace.updateFindResultCount(count)

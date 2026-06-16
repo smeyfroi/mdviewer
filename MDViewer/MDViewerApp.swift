@@ -28,7 +28,6 @@ struct MDViewerApp: App {
                 }
         }
         .windowStyle(.titleBar)
-        .windowToolbarStyle(.unifiedCompact)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Open...") {
@@ -103,11 +102,16 @@ struct MDViewerApp: App {
             }
 
             CommandMenu("Markdown") {
-                Button(workspace.isFindVisible ? "Hide Find" : "Find") {
-                    workspace.toggleFind()
+                Button("Find") {
+                    workspace.focusFind()
                 }
                 .keyboardShortcut("f")
                 .disabled(!workspace.hasActiveDocument)
+
+                Button("Clear Find") {
+                    workspace.clearFind()
+                }
+                .disabled(workspace.findQuery.isEmpty)
 
                 Divider()
 
@@ -174,7 +178,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, 
 
     func configureMainWindow(_ window: NSWindow) {
         guard mainWindow !== window else {
-            normalizeToolbar(for: window)
+            configureWindowChrome(for: window)
             return
         }
 
@@ -182,7 +186,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, 
         window.delegate = self
         window.isReleasedWhenClosed = false
         window.tabbingMode = .disallowed
-        normalizeToolbar(for: window)
+        configureWindowChrome(for: window)
         repairCloseMenuItem()
     }
 
@@ -192,20 +196,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, 
         DispatchQueue.main.async { [weak self] in
             self?.repairQuitMenuItem()
             self?.repairCloseMenuItem()
-            self?.normalizeToolbars()
+            self?.configureWindowChrome()
         }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
         repairQuitMenuItem()
         repairCloseMenuItem()
-        normalizeToolbars()
+        configureWindowChrome()
         workspace?.refreshRecentDocuments()
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
         open(urls: urls)
-        normalizeToolbars()
+        configureWindowChrome()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -326,22 +330,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation, 
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    private func normalizeToolbars() {
+    private func configureWindowChrome() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             if let mainWindow = self.mainWindow {
-                self.normalizeToolbar(for: mainWindow)
+                self.configureWindowChrome(for: mainWindow)
             }
         }
     }
 
-    private func normalizeToolbar(for window: NSWindow) {
-        window.toolbarStyle = .unifiedCompact
-        guard let toolbar = window.toolbar else { return }
-        toolbar.isVisible = true
-        toolbar.displayMode = .iconOnly
-        toolbar.sizeMode = .regular
-        toolbar.autosavesConfiguration = false
-        toolbar.allowsUserCustomization = false
+    private func configureWindowChrome(for window: NSWindow) {
+        window.title = "MDViewer"
+        window.titleVisibility = .visible
+        window.toolbar = nil
     }
 }
 

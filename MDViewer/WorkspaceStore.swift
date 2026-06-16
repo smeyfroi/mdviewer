@@ -63,6 +63,7 @@ final class WorkspaceStore: ObservableObject {
     @Published private(set) var isOutlineVisible = false
     @Published var isFindVisible = false
     @Published var findQuery = ""
+    @Published private(set) var findFocusRequest = UUID()
     @Published private(set) var findResultCount = 0
     @Published private(set) var scrollRequest: MarkdownScrollRequest?
     @Published private(set) var recentDocuments: [RecentDocument] = []
@@ -343,11 +344,17 @@ final class WorkspaceStore: ObservableObject {
     }
 
     func toggleFind() {
-        isFindVisible.toggle()
-        if !isFindVisible {
-            findQuery = ""
-            findResultCount = 0
-        }
+        focusFind()
+    }
+
+    func focusFind() {
+        isFindVisible = true
+        findFocusRequest = UUID()
+    }
+
+    func clearFind() {
+        findQuery = ""
+        findResultCount = 0
     }
 
     func updateFindResultCount(_ count: Int) {
