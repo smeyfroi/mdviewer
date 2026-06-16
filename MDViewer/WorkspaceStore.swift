@@ -253,6 +253,9 @@ final class WorkspaceStore: ObservableObject {
                 url.stopAccessingSecurityScopedResource()
             }
         }
+        defer {
+            removeMDViewerQuarantineAttribute(from: url)
+        }
 
         do {
             tabs[index].markdown = try String(contentsOf: url, encoding: .utf8)
@@ -453,6 +456,9 @@ final class WorkspaceStore: ObservableObject {
                 url.stopAccessingSecurityScopedResource()
             }
         }
+        defer {
+            removeMDViewerQuarantineAttribute(from: url)
+        }
 
         do {
             let markdown = try String(contentsOf: url, encoding: .utf8)
@@ -496,6 +502,9 @@ final class WorkspaceStore: ObservableObject {
                 if didAccess {
                     restoredURL.stopAccessingSecurityScopedResource()
                 }
+            }
+            defer {
+                removeMDViewerQuarantineAttribute(from: restoredURL)
             }
 
             do {
@@ -556,6 +565,7 @@ final class WorkspaceStore: ObservableObject {
     private func noteRecentDocument(_ url: URL) {
         NSDocumentController.shared.noteNewRecentDocumentURL(url)
         saveRecentBookmark(for: url)
+        removeMDViewerQuarantineAttribute(from: url)
     }
 
     private func resolvedRecentURL(for url: URL) -> URL {
