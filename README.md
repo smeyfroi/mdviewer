@@ -49,6 +49,12 @@ qlmanage -r
 qlmanage -r cache
 ```
 
+If Finder shows a warning such as “Apple could not verify `<file>.md` is free of malware,” macOS is blocking the Markdown document itself, not the MDViewer bundle. That can happen when the file has a quarantine extended attribute. MDViewer removes its own quarantine marker after successfully saving a Markdown file, but existing files that already carry quarantine metadata may need a one-time cleanup:
+
+```sh
+xattr -d com.apple.quarantine path/to/file.md
+```
+
 ## Build
 
 Open `MDViewer.xcodeproj` in Xcode and run the `MDViewer` scheme.
@@ -65,7 +71,7 @@ Command-line release build:
 xcodebuild -project MDViewer.xcodeproj -scheme MDViewer -configuration Release -derivedDataPath build/DerivedData build
 ```
 
-GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.5` also creates a GitHub Release with `MDViewer.app.zip` attached.
+GitHub Actions also runs a Release build on every push to `main` or `master` and uploads a zipped `MDViewer.app` workflow artifact. Pushing a version tag such as `v0.1.6` also creates a GitHub Release with `MDViewer.app.zip` attached.
 
 The release app is produced at:
 

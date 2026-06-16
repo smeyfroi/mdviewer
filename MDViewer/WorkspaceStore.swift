@@ -1,4 +1,5 @@
 import AppKit
+import Darwin
 import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
@@ -223,6 +224,7 @@ final class WorkspaceStore: ObservableObject {
 
         do {
             try tabs[index].markdown.write(to: url, atomically: true, encoding: .utf8)
+            removeMDViewerQuarantineAttribute(from: url)
             tabs[index].isDirty = false
             tabs[index].errorMessage = nil
             tabs[index].bookmarkData = makeBookmark(for: url)
@@ -630,6 +632,51 @@ final class WorkspaceStore: ObservableObject {
         return (values.contentModificationDate, values.fileSize.map(Int64.init))
     }
 
+    private func removeMDViewerQuarantineAttribute(from url: URL) {
+        guard quarantineAttributeWasWrittenByMDViewer(at: url) else { return }
+
+        url.withUnsafeFileSystemRepresentation { path in
+            guard let path else { return }
+            quarantineAttributeName.withCString { attributeName in
+                _ = removexattr(path, attributeName, 0)
+            }
+        }
+    }
+
+    private func quarantineAttributeWasWrittenByMDViewer(at url: URL) -> Bool {
+        guard let value = extendedAttribute(named: quarantineAttributeName, at: url),
+              let quarantineValue = String(data: value, encoding: .utf8)
+        else { return false }
+
+        let fields = quarantineValue.split(separator: ";", omittingEmptySubsequences: false)
+        guard fields.count >= 3 else { return false }
+        return fields[2].localizedCaseInsensitiveCompare("MDViewer") == .orderedSame
+    }
+
+    private func extendedAttribute(named name: String, at url: URL) -> Data? {
+        url.withUnsafeFileSystemRepresentation { path -> Data? in
+            guard let path else { return nil }
+
+            return name.withCString { attributeName -> Data? in
+                let length = getxattr(path, attributeName, nil, 0, 0, 0)
+                guard length > 0 else { return nil }
+
+                let expectedLength = length
+                var data = Data(count: expectedLength)
+                let readLength = data.withUnsafeMutableBytes { buffer -> ssize_t in
+                    guard let baseAddress = buffer.baseAddress else { return -1 }
+                    return getxattr(path, attributeName, baseAddress, expectedLength, 0, 0)
+                }
+
+                guard readLength > 0 else { return nil }
+                if readLength < data.count {
+                    data.removeSubrange(Int(readLength)..<data.count)
+                }
+                return data
+            }
+        }
+    }
+
     private func confirmCloseIfNeeded(_ tab: MarkdownTab) -> Bool {
         guard tab.isDirty else { return true }
 
@@ -681,6 +728,8 @@ final class WorkspaceStore: ObservableObject {
         min(2.6, max(0.55, value))
     }
 }
+
+private let quarantineAttributeName = "com.apple.quarantine"
 
 private struct WorkspaceSnapshot: Codable {
     var tabs: [SavedTab]
