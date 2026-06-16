@@ -155,7 +155,6 @@ final class WorkspaceStore: ObservableObject {
     }
 
     func clearRecentDocuments() {
-        NSDocumentController.shared.clearRecentDocuments(self)
         clearRecentBookmarks()
         refreshRecentDocuments()
     }
@@ -224,7 +223,7 @@ final class WorkspaceStore: ObservableObject {
 
         do {
             try tabs[index].markdown.write(to: url, atomically: true, encoding: .utf8)
-            removeMDViewerQuarantineAttribute(from: url)
+            scheduleMDViewerQuarantineCleanup(for: url)
             tabs[index].isDirty = false
             tabs[index].errorMessage = nil
             tabs[index].bookmarkData = makeBookmark(for: url)
@@ -254,7 +253,7 @@ final class WorkspaceStore: ObservableObject {
             }
         }
         defer {
-            removeMDViewerQuarantineAttribute(from: url)
+            scheduleMDViewerQuarantineCleanup(for: url)
         }
 
         do {
@@ -457,7 +456,7 @@ final class WorkspaceStore: ObservableObject {
             }
         }
         defer {
-            removeMDViewerQuarantineAttribute(from: url)
+            scheduleMDViewerQuarantineCleanup(for: url)
         }
 
         do {
@@ -504,7 +503,7 @@ final class WorkspaceStore: ObservableObject {
                 }
             }
             defer {
-                removeMDViewerQuarantineAttribute(from: restoredURL)
+                scheduleMDViewerQuarantineCleanup(for: restoredURL)
             }
 
             do {
@@ -563,9 +562,8 @@ final class WorkspaceStore: ObservableObject {
     }
 
     private func noteRecentDocument(_ url: URL) {
-        NSDocumentController.shared.noteNewRecentDocumentURL(url)
         saveRecentBookmark(for: url)
-        removeMDViewerQuarantineAttribute(from: url)
+        scheduleMDViewerQuarantineCleanup(for: url)
     }
 
     private func resolvedRecentURL(for url: URL) -> URL {
@@ -645,10 +643,22 @@ final class WorkspaceStore: ObservableObject {
     private func removeMDViewerQuarantineAttribute(from url: URL) {
         guard quarantineAttributeWasWrittenByMDViewer(at: url) else { return }
 
+        try? (url as NSURL).setResourceValue(nil, forKey: .quarantinePropertiesKey)
+
         url.withUnsafeFileSystemRepresentation { path in
             guard let path else { return }
             quarantineAttributeName.withCString { attributeName in
                 _ = removexattr(path, attributeName, 0)
+            }
+        }
+    }
+
+    private func scheduleMDViewerQuarantineCleanup(for url: URL) {
+        removeMDViewerQuarantineAttribute(from: url)
+
+        for delay in [1.0, 3.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.removeMDViewerQuarantineAttribute(from: url)
             }
         }
     }
