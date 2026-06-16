@@ -7,7 +7,7 @@ struct MDViewerApp: App {
     @StateObject private var workspace = WorkspaceStore()
 
     var body: some Scene {
-        Window("MDViewer", id: "main") {
+        WindowGroup {
             ContentView()
                 .environmentObject(workspace)
                 .onAppear {
@@ -22,7 +22,6 @@ struct MDViewerApp: App {
                     appDelegate.open(urls: [url])
                 }
         }
-        .defaultSize(width: 1120, height: 760)
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unifiedCompact)
         .commands {
@@ -139,6 +138,7 @@ struct MDViewerApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
     weak var workspace: WorkspaceStore?
     private var pendingOpenURLs: [URL] = []
+    private var windowObservers: [NSObjectProtocol] = []
 
     func attach(workspace: WorkspaceStore) -> [URL] {
         self.workspace = workspace
@@ -159,22 +159,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = false
+        installWindowObservers()
         DispatchQueue.main.async { [weak self] in
             self?.repairQuitMenuItem()
+            self?.collapseToSingleWindow()
         }
     }
 
     func applicationDidBecomeActive(_ notification: Notification) {
         repairQuitMenuItem()
+        collapseToSingleWindow()
         workspace?.refreshRecentDocuments()
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
         open(urls: urls)
+        collapseToSingleWindow()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        removeWindowObservers()
         workspace?.saveWorkspace()
+    }
+
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool {
+        false
     }
 
     func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
@@ -205,5 +214,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         quitItem.target = self
         quitItem.action = #selector(quit(_:))
         quitItem.isEnabled = true
+    }
+
+    private func installWindowObservers() {
+        guard windowObservers.isEmpty else { return }
+
+        let notifications: [Notification.Name] = [
+            NSWindow.didBecomeMainNotification,
+            NSWindow.didBecomeKeyNotification,
+            NSWindow.didUpdateNotification
+        ]
+
+        windowObservers = notifications.map { name in
+            NotificationCenter.default.addObserver(
+                forName: name,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    self?.collapseToSingleWindow()
+                }
+            }
+        }
+    }
+
+    private func removeWindowObservers() {
+        for observer in windowObservers {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        windowObservers.removeAll()
+    }
+
+    private func collapseToSingleWindow() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            let documentWindows = NSApp.windows.filter { window in
+                window.level == .normal &&
+                window.isVisible &&
+                !window.isMiniaturized &&
+                !window.isSheet &&
+                window.styleMask.contains(.titled)
+            }
+
+            guard documentWindows.count > 1 else { return }
+
+            let keeper = documentWindows.first { $0.isKeyWindow } ??
+                documentWindows.first { $0.isMainWindow } ??
+                documentWindows.first
+
+            for window in documentWindows where window !== keeper {
+                window.close()
+            }
+        }
     }
 }
